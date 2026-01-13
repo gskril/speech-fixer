@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { elevenlabs } from "@/lib/elevenlabs";
-import path from "path";
-import fs from "fs/promises";
-import os from "os";
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +29,7 @@ export async function POST(request: NextRequest) {
     // Convert ReadableStream to buffer using getReader()
     const reader = audioStream.getReader();
     const chunks: Uint8Array[] = [];
-    
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -48,18 +45,11 @@ export async function POST(request: NextRequest) {
       offset += chunk.length;
     }
 
-    // Save to temp file
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "synth-"));
-    const tempPath = path.join(tempDir, "synthesized.mp3");
-    await fs.writeFile(tempPath, audioBuffer);
-
-    // Return the audio as a base64 encoded string along with the temp path
+    // Return the audio as a base64 encoded string
     const base64Audio = Buffer.from(audioBuffer).toString("base64");
 
     return NextResponse.json({
       audio: base64Audio,
-      audioPath: tempPath,
-      mimeType: "audio/mpeg",
     });
   } catch (error) {
     console.error("Synthesis error:", error);

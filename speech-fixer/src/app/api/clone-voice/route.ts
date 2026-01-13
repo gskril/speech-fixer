@@ -3,6 +3,22 @@ import { elevenlabs } from "@/lib/elevenlabs";
 
 export async function POST(request: NextRequest) {
   try {
+    const contentType = request.headers.get("content-type") || "";
+
+    // Handle JSON request (used by sendBeacon for cleanup)
+    if (contentType.includes("application/json")) {
+      const { voiceId } = await request.json();
+      if (voiceId) {
+        await elevenlabs.voices.delete(voiceId);
+        return NextResponse.json({ success: true });
+      }
+      return NextResponse.json(
+        { error: "No voice ID provided" },
+        { status: 400 }
+      );
+    }
+
+    // Handle FormData request (voice cloning)
     const formData = await request.formData();
     const file = formData.get("audio") as File;
     const name = formData.get("name") as string || "Cloned Voice";

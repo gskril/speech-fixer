@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { AudioUpload } from "@/components/AudioUpload";
 import { Waveform } from "@/components/Waveform";
 import { TranscriptEditor } from "@/components/TranscriptEditor";
@@ -26,6 +26,36 @@ export default function Home() {
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Keep a ref to voiceId for cleanup on page unload
+  const voiceIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    voiceIdRef.current = voiceId;
+  }, [voiceId]);
+
+  // Clean up voice on page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (voiceIdRef.current) {
+        // Use sendBeacon for reliable cleanup during page unload
+        const data = JSON.stringify({ voiceId: voiceIdRef.current });
+        navigator.sendBeacon("/api/clone-voice", new Blob([data], { type: "application/json" }));
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      // Also clean up on component unmount
+      if (voiceIdRef.current) {
+        fetch("/api/clone-voice", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ voiceId: voiceIdRef.current }),
+        }).catch(() => {});
+      }
+    };
+  }, []);
 
   // Clean up audio URL when component unmounts or audio changes
   useEffect(() => {
@@ -244,13 +274,9 @@ export default function Home() {
 
         const spliceData = await spliceRes.json();
 
-        // Create new File and URL from spliced audio
-        const binaryStr = atob(spliceData.audio);
-        const bytes = new Uint8Array(binaryStr.length);
-        for (let i = 0; i < binaryStr.length; i++) {
-          bytes[i] = binaryStr.charCodeAt(i);
-        }
-        const newBlob = new Blob([bytes], { type: "audio/mpeg" });
+        // Create new File and URL from spliced audio using efficient base64 decoding
+        const response = await fetch(`data:audio/mpeg;base64,${spliceData.audio}`);
+        const newBlob = await response.blob();
         const newFile = new File([newBlob], audioFile.name, { type: "audio/mpeg" });
 
         // Revoke old URL

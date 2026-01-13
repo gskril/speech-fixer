@@ -2,6 +2,9 @@
 
 import { useCallback, useState } from "react";
 
+const MAX_FILE_SIZE_MB = 50;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 interface AudioUploadProps {
   onFileSelect: (file: File) => void;
   isLoading?: boolean;
@@ -13,6 +16,10 @@ export function AudioUpload({ onFileSelect, isLoading = false }: AudioUploadProp
   const validateFile = useCallback((file: File): boolean => {
     if (!file.type.includes("audio/") && !file.name.endsWith(".mp3")) {
       alert("Please upload an MP3 audio file.");
+      return false;
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      alert(`File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.`);
       return false;
     }
     return true;
@@ -103,7 +110,7 @@ export function AudioUpload({ onFileSelect, isLoading = false }: AudioUploadProp
         </div>
         
         <p className="text-xs text-gray-400 dark:text-gray-500">
-          Supports MP3 format
+          MP3 format, max {MAX_FILE_SIZE_MB}MB
         </p>
       </div>
 
