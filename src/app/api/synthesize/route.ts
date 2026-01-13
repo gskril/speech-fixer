@@ -19,11 +19,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate speech using the cloned voice
+    // Generate speech using the cloned voice with optimized settings
     const audioStream = await elevenlabs.textToSpeech.convert(voiceId, {
       text: text,
-      modelId: "eleven_turbo_v2_5", // Fast, high-quality model
+      modelId: "eleven_multilingual_v2", // Higher quality model for better voice matching
       outputFormat: "mp3_44100_128",
+      voiceSettings: {
+        stability: 0.5, // Balance between consistency and expressiveness
+        similarityBoost: 0.9, // High similarity to original voice
+        style: 0.3, // Slight style for natural speech
+        useSpeakerBoost: true, // Enhance voice clarity
+      },
     });
 
     // Convert ReadableStream to buffer using getReader()

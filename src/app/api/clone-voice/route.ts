@@ -20,10 +20,24 @@ export async function POST(request: NextRequest) {
 
     // Handle FormData request (voice cloning)
     const formData = await request.formData();
-    const file = formData.get("audio") as File;
     const name = formData.get("name") as string || "Cloned Voice";
 
-    if (!file) {
+    // Support multiple audio files for better voice cloning quality
+    const files: File[] = [];
+    const audioFile = formData.get("audio") as File;
+    if (audioFile) {
+      files.push(audioFile);
+    }
+
+    // Also check for additional samples (audio_1, audio_2, etc.)
+    for (let i = 1; i <= 5; i++) {
+      const additionalFile = formData.get(`audio_${i}`) as File;
+      if (additionalFile) {
+        files.push(additionalFile);
+      }
+    }
+
+    if (files.length === 0) {
       return NextResponse.json(
         { error: "No audio file provided" },
         { status: 400 }
@@ -31,9 +45,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Create instant voice clone using ivc.create
+    // More audio samples = better voice quality (up to 2 minutes total recommended)
     const result = await elevenlabs.voices.ivc.create({
       name: name,
-      files: [file],
+      files: files,
       description: "Auto-cloned voice for speech replacement",
     });
 

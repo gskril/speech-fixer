@@ -152,6 +152,27 @@ export function AudioUpload({
           </svg>
           MP3 up to {MAX_FILE_SIZE_MB}MB
         </div>
+
+        {/* Quality tips */}
+        <div className="mt-6 pt-4 border-t border-slate-700/50 w-full max-w-sm">
+          <p className="text-xs text-slate-500 mb-2 font-medium">
+            For best voice cloning:
+          </p>
+          <ul className="text-xs text-slate-500 space-y-1">
+            <li className="flex items-start gap-2">
+              <span className="text-amber-500 mt-0.5">•</span>
+              <span>Use 1-2 minutes of clear speech</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-500 mt-0.5">•</span>
+              <span>Avoid background noise & echo</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-amber-500 mt-0.5">•</span>
+              <span>Consistent volume throughout</span>
+            </li>
+          </ul>
+        </div>
       </div>
 
       {/* Loading overlay */}
