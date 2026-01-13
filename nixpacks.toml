@@ -1,0 +1,11 @@
+# Railway/Nixpacks configuration
+# Install FFmpeg for audio processing
+
+[phases.setup]
+nixPkgs = ["ffmpeg"]
+
+[phases.build]
+cmds = ["npm ci", "npm run build"]
+
+[start]
+cmd = "npm start"
