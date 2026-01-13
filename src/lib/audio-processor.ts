@@ -1,16 +1,27 @@
 import ffmpeg from "fluent-ffmpeg";
-import ffmpegPath from "ffmpeg-static";
-import ffprobePath from "ffprobe-static";
+import { execFileSync } from "child_process";
 import path from "path";
 import fs from "fs/promises";
 import os from "os";
 
-// Configure fluent-ffmpeg to use bundled binaries
-if (ffmpegPath) {
-  ffmpeg.setFfmpegPath(ffmpegPath);
+// Configure fluent-ffmpeg to use system binaries
+// This is needed for Railway/Nixpacks deployments where binaries are in PATH
+function findBinary(name: string): string | null {
+  try {
+    return execFileSync("which", [name], { encoding: "utf-8" }).trim();
+  } catch {
+    return null;
+  }
 }
-if (ffprobePath?.path) {
-  ffmpeg.setFfprobePath(ffprobePath.path);
+
+const ffmpegBin = findBinary("ffmpeg");
+const ffprobeBin = findBinary("ffprobe");
+
+if (ffmpegBin) {
+  ffmpeg.setFfmpegPath(ffmpegBin);
+}
+if (ffprobeBin) {
+  ffmpeg.setFfprobePath(ffprobeBin);
 }
 
 export interface SpliceParams {
