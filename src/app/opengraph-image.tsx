@@ -84,24 +84,6 @@ export default async function Image() {
           </p>
         </div>
 
-        {/* URL badge */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: "48px",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "12px 24px",
-            backgroundColor: "#29252480",
-            borderRadius: "999px",
-            border: "1px solid #44403c",
-          }}
-        >
-          <span style={{ fontSize: "20px", color: "#d6d3d1" }}>
-            speech.gregskril.com
-          </span>
-        </div>
       </div>
     ),
     {
