@@ -113,7 +113,7 @@ export function AudioUpload({
                   key={i}
                   className={`
                     w-1 rounded-full transition-all duration-300
-                    ${isDragging ? "bg-amber-400" : "bg-themed-muted group-hover:bg-amber-400/70"}
+                    ${isDragging ? "bg-amber-400" : "bg-stone-400 group-hover:bg-amber-400/70"}
                   `}
                   style={{
                     height: `${height * 32}px`,
