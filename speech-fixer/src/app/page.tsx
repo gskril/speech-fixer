@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { AudioUpload } from "@/components/AudioUpload";
 import { Waveform } from "@/components/Waveform";
 import { TranscriptEditor } from "@/components/TranscriptEditor";
 import { ReplacementInput } from "@/components/ReplacementInput";
 import { ProcessingStatus } from "@/components/ProcessingStatus";
 import { TranscriptionResult, WordSelection } from "@/lib/types";
+import { useTranscribe, useCloneVoice, useDeleteVoice, useReplaceAudio } from "@/hooks/useApi";
 
 interface ProcessingStep {
   id: string;
@@ -23,9 +24,12 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState(0);
   const [selection, setSelection] = useState<WordSelection | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<{ start: number; end: number } | null>(null);
-  const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  // React Query mutations
+  const transcribeMutation = useTranscribe();
+  const cloneVoiceMutation = useCloneVoice();
+  const deleteVoiceMutation = useDeleteVoice();
+  const { replaceAudio, synthesizeStatus, spliceStatus } = useReplaceAudio();
 
   // Keep a ref to voiceId for cleanup on page unload
   const voiceIdRef = useRef<string | null>(null);
@@ -37,7 +41,6 @@ export default function Home() {
   useEffect(() => {
     const handleBeforeUnload = () => {
       if (voiceIdRef.current) {
-        // Use sendBeacon for reliable cleanup during page unload
         const data = JSON.stringify({ voiceId: voiceIdRef.current });
         navigator.sendBeacon("/api/clone-voice", new Blob([data], { type: "application/json" }));
       }
@@ -46,7 +49,6 @@ export default function Home() {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      // Also clean up on component unmount
       if (voiceIdRef.current) {
         fetch("/api/clone-voice", {
           method: "DELETE",
@@ -66,11 +68,76 @@ export default function Home() {
     };
   }, [audioUrl]);
 
+  // Derive processing state from mutations
+  const isProcessing = transcribeMutation.isPending || cloneVoiceMutation.isPending || replaceAudio.isPending;
+
+  // Derive error from mutations
+  const error = useMemo(() => {
+    if (transcribeMutation.error) return transcribeMutation.error.message;
+    if (cloneVoiceMutation.error) return cloneVoiceMutation.error.message;
+    if (replaceAudio.error) return replaceAudio.error.message;
+    return null;
+  }, [transcribeMutation.error, cloneVoiceMutation.error, replaceAudio.error]);
+
+  // Derive processing steps from mutation states
+  const processingSteps = useMemo((): ProcessingStep[] => {
+    // File processing steps
+    if (transcribeMutation.isPending || cloneVoiceMutation.isPending ||
+        (transcribeMutation.isSuccess && cloneVoiceMutation.isIdle)) {
+      return [
+        {
+          id: "transcribe",
+          label: "Transcribing audio...",
+          status: transcribeMutation.isPending ? "in_progress" :
+                  transcribeMutation.isSuccess ? "completed" :
+                  transcribeMutation.isError ? "error" : "pending",
+          error: transcribeMutation.error?.message,
+        },
+        {
+          id: "clone",
+          label: "Creating voice clone...",
+          status: cloneVoiceMutation.isPending ? "in_progress" :
+                  cloneVoiceMutation.isSuccess ? "completed" :
+                  cloneVoiceMutation.isError ? "error" : "pending",
+          error: cloneVoiceMutation.error?.message,
+        },
+      ];
+    }
+
+    // Replace audio steps
+    if (replaceAudio.isPending) {
+      return [
+        {
+          id: "synthesize",
+          label: "Generating new audio...",
+          status: synthesizeStatus === "pending" ? "in_progress" :
+                  synthesizeStatus === "success" ? "completed" :
+                  synthesizeStatus === "error" ? "error" : "pending",
+        },
+        {
+          id: "splice",
+          label: "Splicing audio...",
+          status: spliceStatus === "pending" ? "in_progress" :
+                  spliceStatus === "success" ? "completed" :
+                  spliceStatus === "error" ? "error" : "pending",
+        },
+      ];
+    }
+
+    return [];
+  }, [
+    transcribeMutation.isPending, transcribeMutation.isSuccess, transcribeMutation.isError, transcribeMutation.error,
+    cloneVoiceMutation.isPending, cloneVoiceMutation.isSuccess, cloneVoiceMutation.isError, cloneVoiceMutation.error, cloneVoiceMutation.isIdle,
+    replaceAudio.isPending, synthesizeStatus, spliceStatus,
+  ]);
+
   const handleFileSelect = useCallback(async (file: File) => {
-    setError(null);
+    // Reset mutations
+    transcribeMutation.reset();
+    cloneVoiceMutation.reset();
+    replaceAudio.reset();
+
     setAudioFile(file);
-    
-    // Create object URL for playback
     const url = URL.createObjectURL(file);
     setAudioUrl(url);
 
@@ -80,86 +147,17 @@ export default function Home() {
     setSelection(null);
     setSelectedRegion(null);
 
-    // Start transcription and voice cloning
-    setProcessingSteps([
-      { id: "transcribe", label: "Transcribing audio...", status: "in_progress" },
-      { id: "clone", label: "Creating voice clone...", status: "pending" },
-    ]);
-    setIsProcessing(true);
-
     try {
-      // Transcribe audio
-      const transcribeFormData = new FormData();
-      transcribeFormData.append("audio", file);
-      
-      const transcribeRes = await fetch("/api/transcribe", {
-        method: "POST",
-        body: transcribeFormData,
-      });
-
-      if (!transcribeRes.ok) {
-        const errorData = await transcribeRes.json();
-        throw new Error(errorData.error || "Transcription failed");
-      }
-
-      const transcriptionData: TranscriptionResult = await transcribeRes.json();
+      // Run transcription first, then voice cloning
+      const transcriptionData = await transcribeMutation.mutateAsync(file);
       setTranscription(transcriptionData);
 
-      setProcessingSteps((prev) =>
-        prev.map((step) =>
-          step.id === "transcribe"
-            ? { ...step, status: "completed" }
-            : step.id === "clone"
-            ? { ...step, status: "in_progress" }
-            : step
-        )
-      );
-
-      // Clone voice
-      const cloneFormData = new FormData();
-      cloneFormData.append("audio", file);
-      cloneFormData.append("name", `Voice-${Date.now()}`);
-
-      const cloneRes = await fetch("/api/clone-voice", {
-        method: "POST",
-        body: cloneFormData,
-      });
-
-      if (!cloneRes.ok) {
-        const errorData = await cloneRes.json();
-        throw new Error(errorData.error || "Voice cloning failed");
-      }
-
-      const cloneData = await cloneRes.json();
+      const cloneData = await cloneVoiceMutation.mutateAsync(file);
       setVoiceId(cloneData.voice_id);
-
-      setProcessingSteps((prev) =>
-        prev.map((step) =>
-          step.id === "clone" ? { ...step, status: "completed" } : step
-        )
-      );
-
-      // Hide processing overlay after a short delay
-      setTimeout(() => {
-        setIsProcessing(false);
-        setProcessingSteps([]);
-      }, 1000);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "An error occurred";
-      setError(errorMessage);
-      setProcessingSteps((prev) =>
-        prev.map((step) =>
-          step.status === "in_progress"
-            ? { ...step, status: "error", error: errorMessage }
-            : step
-        )
-      );
-
-      setTimeout(() => {
-        setIsProcessing(false);
-      }, 2000);
+    } catch {
+      // Error is handled by the mutation state
     }
-  }, []);
+  }, [transcribeMutation, cloneVoiceMutation, replaceAudio]);
 
   const handleSelectionChange = useCallback((newSelection: WordSelection | null) => {
     setSelection(newSelection);
@@ -177,7 +175,6 @@ export default function Home() {
     (start: number, end: number) => {
       if (!transcription) return;
 
-      // Find words that fall within this region
       const words = transcription.words;
       let startIndex = -1;
       let endIndex = -1;
@@ -220,62 +217,17 @@ export default function Home() {
     async (newText: string) => {
       if (!selection || !voiceId || !audioFile) return;
 
-      setError(null);
-      setProcessingSteps([
-        { id: "synthesize", label: "Generating new audio...", status: "in_progress" },
-        { id: "splice", label: "Splicing audio...", status: "pending" },
-      ]);
-      setIsProcessing(true);
-
       try {
-        // Synthesize new audio
-        const synthRes = await fetch("/api/synthesize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text: newText,
-            voiceId: voiceId,
-          }),
+        const result = await replaceAudio.mutateAsync({
+          text: newText,
+          voiceId,
+          originalAudio: audioFile,
+          startTime: selection.startTime,
+          endTime: selection.endTime,
         });
 
-        if (!synthRes.ok) {
-          const errorData = await synthRes.json();
-          throw new Error(errorData.error || "Synthesis failed");
-        }
-
-        const synthData = await synthRes.json();
-
-        setProcessingSteps((prev) =>
-          prev.map((step) =>
-            step.id === "synthesize"
-              ? { ...step, status: "completed" }
-              : step.id === "splice"
-              ? { ...step, status: "in_progress" }
-              : step
-          )
-        );
-
-        // Splice audio
-        const spliceFormData = new FormData();
-        spliceFormData.append("originalAudio", audioFile);
-        spliceFormData.append("replacementAudio", synthData.audio);
-        spliceFormData.append("startTime", selection.startTime.toString());
-        spliceFormData.append("endTime", selection.endTime.toString());
-
-        const spliceRes = await fetch("/api/splice", {
-          method: "POST",
-          body: spliceFormData,
-        });
-
-        if (!spliceRes.ok) {
-          const errorData = await spliceRes.json();
-          throw new Error(errorData.error || "Splicing failed");
-        }
-
-        const spliceData = await spliceRes.json();
-
-        // Create new File and URL from spliced audio using efficient base64 decoding
-        const response = await fetch(`data:audio/mpeg;base64,${spliceData.audio}`);
+        // Create new File and URL from spliced audio
+        const response = await fetch(`data:audio/mpeg;base64,${result.audio}`);
         const newBlob = await response.blob();
         const newFile = new File([newBlob], audioFile.name, { type: "audio/mpeg" });
 
@@ -289,17 +241,13 @@ export default function Home() {
         setAudioFile(newFile);
         setAudioUrl(newUrl);
 
-        // Update transcription - replace selected words with new text
+        // Update transcription
         if (transcription) {
           const newWords = [...transcription.words];
-          
-          // Calculate time offset from the replacement
           const originalDuration = selection.endTime - selection.startTime;
-          // We don't know the exact new duration, so we estimate based on text length ratio
           const estimatedDuration = originalDuration * (newText.length / selection.selectedText.length);
           const timeOffset = estimatedDuration - originalDuration;
 
-          // Replace selected words with new word
           const newWord = {
             text: newText,
             start: selection.startTime,
@@ -307,10 +255,8 @@ export default function Home() {
             type: "word" as const,
           };
 
-          // Remove old words and insert new
           newWords.splice(selection.startIndex, selection.endIndex - selection.startIndex + 1, newWord);
 
-          // Adjust timestamps for words after the replacement
           for (let i = selection.startIndex + 1; i < newWords.length; i++) {
             newWords[i] = {
               ...newWords[i],
@@ -329,39 +275,16 @@ export default function Home() {
         // Clear selection
         setSelection(null);
         setSelectedRegion(null);
-
-        setProcessingSteps((prev) =>
-          prev.map((step) =>
-            step.id === "splice" ? { ...step, status: "completed" } : step
-          )
-        );
-
-        setTimeout(() => {
-          setIsProcessing(false);
-          setProcessingSteps([]);
-        }, 1000);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "An error occurred";
-        setError(errorMessage);
-        setProcessingSteps((prev) =>
-          prev.map((step) =>
-            step.status === "in_progress"
-              ? { ...step, status: "error", error: errorMessage }
-              : step
-          )
-        );
-
-        setTimeout(() => {
-          setIsProcessing(false);
-        }, 2000);
+      } catch {
+        // Error is handled by the mutation state
       }
     },
-    [selection, voiceId, audioFile, audioUrl, transcription]
+    [selection, voiceId, audioFile, audioUrl, transcription, replaceAudio]
   );
 
   const handleDownload = useCallback(() => {
     if (!audioUrl || !audioFile) return;
-    
+
     const link = document.createElement("a");
     link.href = audioUrl;
     link.download = `edited-${audioFile.name}`;
@@ -371,19 +294,20 @@ export default function Home() {
   }, [audioUrl, audioFile]);
 
   const handleReset = useCallback(() => {
-    // Cleanup voice on ElevenLabs (optional)
+    // Cleanup voice on ElevenLabs
     if (voiceId) {
-      fetch("/api/clone-voice", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ voiceId }),
-      }).catch(() => {}); // Ignore errors
+      deleteVoiceMutation.mutate(voiceId);
     }
 
     // Revoke URL
     if (audioUrl) {
       URL.revokeObjectURL(audioUrl);
     }
+
+    // Reset mutations
+    transcribeMutation.reset();
+    cloneVoiceMutation.reset();
+    replaceAudio.reset();
 
     // Reset all state
     setAudioFile(null);
@@ -392,8 +316,7 @@ export default function Home() {
     setVoiceId(null);
     setSelection(null);
     setSelectedRegion(null);
-    setError(null);
-  }, [voiceId, audioUrl]);
+  }, [voiceId, audioUrl, deleteVoiceMutation, transcribeMutation, cloneVoiceMutation, replaceAudio]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
