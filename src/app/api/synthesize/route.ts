@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     // Generate speech using the cloned voice with optimized settings
     const audioStream = await elevenlabs.textToSpeech.convert(voiceId, {
       text: text,
-      modelId: "eleven_english_v2",
+      modelId: "eleven_multilingual_v2",
       outputFormat: "mp3_44100_128",
       // Provide surrounding text context for natural intonation and pacing
       previousText: previousText || undefined,
