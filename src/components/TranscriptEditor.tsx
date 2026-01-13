@@ -184,7 +184,7 @@ export function TranscriptEditor({
   if (!words || words.length === 0) {
     return (
       <div className="card p-6">
-        <p className="text-slate-500 text-center">No transcription available</p>
+        <p className="text-themed-muted text-center">No transcription available</p>
       </div>
     );
   }
@@ -194,9 +194,9 @@ export function TranscriptEditor({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-slate-800 flex items-center justify-center">
+          <div className="w-6 h-6 rounded-md bg-themed-tertiary flex items-center justify-center">
             <svg
-              className="w-3.5 h-3.5 text-slate-400"
+              className="w-3.5 h-3.5 text-themed-tertiary"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -209,13 +209,13 @@ export function TranscriptEditor({
               />
             </svg>
           </div>
-          <span className="text-sm font-medium text-slate-300">Transcript</span>
+          <span className="text-sm font-medium text-themed-secondary">Transcript</span>
         </div>
 
         {effectiveSelection && (
           <button
             onClick={clearSelection}
-            className="tag hover:bg-slate-700 transition-colors cursor-pointer"
+            className="tag hover:opacity-80 transition-colors cursor-pointer"
           >
             <svg
               className="w-3 h-3"
@@ -236,7 +236,7 @@ export function TranscriptEditor({
       </div>
 
       {/* Instructions */}
-      <p className="text-xs text-slate-500 mb-4">
+      <p className="text-xs text-themed-muted mb-4">
         Click and drag to select words, or use arrow keys + Shift
       </p>
 
@@ -247,7 +247,7 @@ export function TranscriptEditor({
         role="textbox"
         aria-label="Transcript text. Use arrow keys to navigate, Shift+arrows to select, Escape to clear."
         onKeyDown={handleKeyDown}
-        className="text-base sm:text-lg leading-relaxed select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded-lg p-3 -m-3 text-slate-300"
+        className="text-base sm:text-lg leading-relaxed select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] rounded-lg p-3 -m-3 text-themed-secondary"
         style={{ userSelect: "none" }}
       >
         {words.map((word, index) => {
@@ -266,10 +266,10 @@ export function TranscriptEditor({
               onMouseEnter={() => handleWordMouseEnter(index)}
               className={`
                 ${word.type === "word" ? "cursor-pointer" : ""}
-                ${selected ? "bg-amber-500/30 text-amber-200 rounded px-0.5 -mx-0.5" : ""}
-                ${active && !selected ? "text-amber-400" : ""}
-                ${word.type === "word" && !selected ? "hover:bg-slate-700/50 rounded" : ""}
-                ${focused && word.type === "word" ? "ring-2 ring-amber-400/50 ring-offset-1 ring-offset-slate-900 rounded" : ""}
+                ${selected ? "bg-amber-500/30 text-themed-accent rounded px-0.5 -mx-0.5" : ""}
+                ${active && !selected ? "text-themed-accent" : ""}
+                ${word.type === "word" && !selected ? "hover:bg-[var(--bg-tertiary)] rounded" : ""}
+                ${focused && word.type === "word" ? "ring-2 ring-amber-400/50 ring-offset-1 ring-offset-[var(--bg-primary)] rounded" : ""}
                 transition-colors duration-100
               `}
             >

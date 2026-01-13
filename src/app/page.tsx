@@ -413,11 +413,11 @@ export default function Home() {
                 </svg>
               </div>
             </div>
-            <h1 className="font-display text-2xl sm:text-3xl font-semibold text-slate-100 tracking-tight">
+            <h1 className="font-display text-2xl sm:text-3xl font-semibold text-themed-primary tracking-tight">
               Speech Fixer
             </h1>
           </div>
-          <p className="text-slate-400 text-base sm:text-lg max-w-xl text-balance leading-relaxed">
+          <p className="text-themed-tertiary text-base sm:text-lg max-w-xl text-balance leading-relaxed">
             Fix words in your recordings with AI. Upload audio, select what to
             change, and let voice cloning do the rest.
           </p>
@@ -474,7 +474,7 @@ export default function Home() {
                   <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
                   Ready
                 </div>
-                <span className="text-sm text-slate-400 truncate">
+                <span className="text-sm text-themed-tertiary truncate">
                   {audioFile?.name}
                 </span>
               </div>
@@ -568,8 +568,8 @@ export default function Home() {
         )}
 
         {/* Footer */}
-        <footer className="mt-16 pt-8 border-t border-slate-800/50">
-          <p className="text-xs text-slate-600 text-center">
+        <footer className="mt-16 pt-8 border-t border-themed">
+          <p className="text-xs text-themed-muted text-center">
             Powered by ElevenLabs voice synthesis
           </p>
         </footer>

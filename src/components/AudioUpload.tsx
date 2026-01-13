@@ -71,7 +71,7 @@ export function AudioUpload({
     <div
       className={`
         relative card p-8 sm:p-12 transition-all duration-300 group
-        ${isDragging ? "border-amber-500/50 bg-amber-500/5 glow-amber" : "hover:border-slate-600"}
+        ${isDragging ? "border-amber-500/50 bg-amber-500/5 glow-amber" : "hover:border-[var(--border-primary)]"}
         ${isLoading ? "opacity-50 pointer-events-none" : "cursor-pointer"}
       `}
       onDragOver={handleDragOver}
@@ -92,7 +92,7 @@ export function AudioUpload({
           <div
             className={`
               w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-300
-              ${isDragging ? "bg-amber-500/20" : "bg-slate-800/80 group-hover:bg-slate-800"}
+              ${isDragging ? "bg-amber-500/20" : "bg-themed-tertiary group-hover:opacity-90"}
             `}
           >
             {/* Waveform bars animation */}
@@ -102,7 +102,7 @@ export function AudioUpload({
                   key={i}
                   className={`
                     w-1 rounded-full transition-all duration-300
-                    ${isDragging ? "bg-amber-400" : "bg-slate-500 group-hover:bg-amber-400/70"}
+                    ${isDragging ? "bg-amber-400" : "bg-themed-muted group-hover:bg-amber-400/70"}
                   `}
                   style={{
                     height: `${height * 32}px`,
@@ -124,12 +124,12 @@ export function AudioUpload({
 
         {/* Text content */}
         <div className="space-y-2 mb-6">
-          <p className="text-lg font-medium text-slate-200">
+          <p className="text-lg font-medium text-themed-secondary">
             {isDragging ? "Drop it here" : "Drop your audio file"}
           </p>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-themed-muted">
             or{" "}
-            <span className="text-amber-400 underline underline-offset-2">
+            <span className="text-themed-accent underline underline-offset-2">
               browse files
             </span>
           </p>
@@ -154,21 +154,21 @@ export function AudioUpload({
         </div>
 
         {/* Quality tips */}
-        <div className="mt-6 pt-4 border-t border-slate-700/50 w-full max-w-sm">
-          <p className="text-xs text-slate-500 mb-2 font-medium">
+        <div className="mt-6 pt-4 border-t border-themed w-full max-w-sm">
+          <p className="text-xs text-themed-muted mb-2 font-medium">
             For best voice cloning:
           </p>
-          <ul className="text-xs text-slate-500 space-y-1">
+          <ul className="text-xs text-themed-muted space-y-1">
             <li className="flex items-start gap-2">
-              <span className="text-amber-500 mt-0.5">•</span>
+              <span className="text-themed-accent mt-0.5">•</span>
               <span>Use 1-2 minutes of clear speech</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-amber-500 mt-0.5">•</span>
+              <span className="text-themed-accent mt-0.5">•</span>
               <span>Avoid background noise & echo</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-amber-500 mt-0.5">•</span>
+              <span className="text-themed-accent mt-0.5">•</span>
               <span>Consistent volume throughout</span>
             </li>
           </ul>
@@ -177,10 +177,10 @@ export function AudioUpload({
 
       {/* Loading overlay */}
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-950/50 rounded-xl backdrop-blur-sm">
+        <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-primary)]/50 rounded-xl backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm text-slate-300">Processing...</span>
+            <span className="text-sm text-themed-secondary">Processing...</span>
           </div>
         </div>
       )}

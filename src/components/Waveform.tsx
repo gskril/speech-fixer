@@ -39,14 +39,20 @@ export function Waveform({
   useEffect(() => {
     if (!containerRef.current || !audioUrl) return;
 
+    // Detect color scheme for waveform colors
+    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const waveColor = isDark ? "#57534e" : "#a8a29e";
+    const progressColor = isDark ? "#fbbf24" : "#d97706";
+    const cursorColor = isDark ? "#f59e0b" : "#b45309";
+
     const regions = RegionsPlugin.create();
     regionsRef.current = regions;
 
     const wavesurfer = WaveSurfer.create({
       container: containerRef.current,
-      waveColor: "#57534e",
-      progressColor: "#fbbf24",
-      cursorColor: "#f59e0b",
+      waveColor,
+      progressColor,
+      cursorColor,
       cursorWidth: 2,
       barWidth: 2,
       barGap: 2,
@@ -87,7 +93,22 @@ export function Waveform({
       color: "rgba(251, 191, 36, 0.2)",
     });
 
+    // Listen for color scheme changes
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = (e: MediaQueryListEvent) => {
+      const newWaveColor = e.matches ? "#57534e" : "#a8a29e";
+      const newProgressColor = e.matches ? "#fbbf24" : "#d97706";
+      const newCursorColor = e.matches ? "#f59e0b" : "#b45309";
+      wavesurfer.setOptions({
+        waveColor: newWaveColor,
+        progressColor: newProgressColor,
+        cursorColor: newCursorColor,
+      });
+    };
+    mediaQuery.addEventListener("change", handleChange);
+
     return () => {
+      mediaQuery.removeEventListener("change", handleChange);
       wavesurfer.destroy();
       wavesurferRef.current = null;
       regionsRef.current = null;
@@ -137,9 +158,9 @@ export function Waveform({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-slate-800 flex items-center justify-center">
+          <div className="w-6 h-6 rounded-md bg-themed-tertiary flex items-center justify-center">
             <svg
-              className="w-3.5 h-3.5 text-slate-400"
+              className="w-3.5 h-3.5 text-themed-tertiary"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -152,9 +173,9 @@ export function Waveform({
               />
             </svg>
           </div>
-          <span className="text-sm font-medium text-slate-300">Waveform</span>
+          <span className="text-sm font-medium text-themed-secondary">Waveform</span>
         </div>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-themed-muted">
           Drag to select a region
         </span>
       </div>
@@ -162,7 +183,7 @@ export function Waveform({
       {/* Waveform container */}
       <div
         ref={containerRef}
-        className="w-full rounded-lg overflow-hidden bg-slate-900/50 border border-slate-800"
+        className="w-full rounded-lg overflow-hidden bg-themed-secondary border border-themed"
       />
 
       {/* Controls */}
@@ -172,7 +193,7 @@ export function Waveform({
           <button
             onClick={togglePlayPause}
             disabled={!isReady}
-            className="btn btn-icon bg-amber-500 hover:bg-amber-400 disabled:bg-slate-700 disabled:cursor-not-allowed text-slate-950 transition-colors"
+            className="btn btn-icon bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 transition-colors"
           >
             {isPlaying ? (
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -209,9 +230,9 @@ export function Waveform({
         </div>
 
         {/* Time display */}
-        <div className="font-mono text-sm text-slate-400 tabular-nums">
-          <span className="text-slate-200">{formatTime(currentTime)}</span>
-          <span className="mx-1.5 text-slate-600">/</span>
+        <div className="font-mono text-sm text-themed-tertiary tabular-nums">
+          <span className="text-themed-primary">{formatTime(currentTime)}</span>
+          <span className="mx-1.5 text-themed-muted">/</span>
           <span>{formatTime(duration)}</span>
         </div>
       </div>
@@ -220,13 +241,13 @@ export function Waveform({
       {selectedRegion && (
         <div className="mt-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-amber-400">
+            <span className="text-xs font-medium text-themed-accent">
               Selection
             </span>
-            <span className="text-xs text-slate-400 font-mono tabular-nums">
+            <span className="text-xs text-themed-tertiary font-mono tabular-nums">
               {formatTime(selectedRegion.start)} -{" "}
               {formatTime(selectedRegion.end)}
-              <span className="ml-2 text-slate-500">
+              <span className="ml-2 text-themed-muted">
                 ({(selectedRegion.end - selectedRegion.start).toFixed(2)}s)
               </span>
             </span>

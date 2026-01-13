@@ -28,9 +28,9 @@ export function ReplacementInput({
     return (
       <div className="card p-6 border-dashed">
         <div className="flex flex-col items-center justify-center text-center py-4">
-          <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center mb-3">
+          <div className="w-10 h-10 rounded-xl bg-themed-tertiary flex items-center justify-center mb-3">
             <svg
-              className="w-5 h-5 text-slate-500"
+              className="w-5 h-5 text-themed-muted"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -43,7 +43,7 @@ export function ReplacementInput({
               />
             </svg>
           </div>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-themed-muted">
             Select words in the transcript to replace them
           </p>
         </div>
@@ -55,9 +55,9 @@ export function ReplacementInput({
     <div className="card p-5">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-6 h-6 rounded-md bg-slate-800 flex items-center justify-center">
+        <div className="w-6 h-6 rounded-md bg-themed-tertiary flex items-center justify-center">
           <svg
-            className="w-3.5 h-3.5 text-slate-400"
+            className="w-3.5 h-3.5 text-themed-tertiary"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -70,7 +70,7 @@ export function ReplacementInput({
             />
           </svg>
         </div>
-        <span className="text-sm font-medium text-slate-300">
+        <span className="text-sm font-medium text-themed-secondary">
           Replace Selection
         </span>
       </div>
@@ -95,7 +95,7 @@ export function ReplacementInput({
             <p className="text-sm text-red-400 line-through">
               &ldquo;{selection.selectedText}&rdquo;
             </p>
-            <p className="text-xs text-slate-500 mt-1 font-mono tabular-nums">
+            <p className="text-xs text-themed-muted mt-1 font-mono tabular-nums">
               {selection.startTime.toFixed(2)}s - {selection.endTime.toFixed(2)}
               s
             </p>

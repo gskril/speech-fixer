@@ -18,7 +18,7 @@ export function ProcessingStatus({ steps, isVisible }: ProcessingStatusProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-[var(--bg-primary)]/80 backdrop-blur-sm" />
 
       {/* Modal */}
       <div className="relative glass rounded-2xl p-8 max-w-sm w-full mx-4 animate-scale-in">
@@ -31,7 +31,7 @@ export function ProcessingStatus({ steps, isVisible }: ProcessingStatusProps) {
                 {[0.4, 0.7, 1, 0.6, 0.8].map((height, i) => (
                   <div
                     key={i}
-                    className="w-1 bg-slate-950 rounded-full animate-pulse"
+                    className="w-1 bg-[var(--bg-primary)] rounded-full animate-pulse"
                     style={{
                       height: `${height * 24}px`,
                       animationDelay: `${i * 0.15}s`,
@@ -46,7 +46,7 @@ export function ProcessingStatus({ steps, isVisible }: ProcessingStatusProps) {
         </div>
 
         {/* Title */}
-        <h3 className="font-display text-lg font-semibold text-slate-100 text-center mb-6">
+        <h3 className="font-display text-lg font-semibold text-themed-primary text-center mb-6">
           Processing Audio
         </h3>
 
@@ -61,8 +61,8 @@ export function ProcessingStatus({ steps, isVisible }: ProcessingStatusProps) {
               {/* Status indicator */}
               <div className="flex-shrink-0">
                 {step.status === "pending" && (
-                  <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
-                    <span className="text-xs font-medium text-slate-500">
+                  <div className="w-7 h-7 rounded-full bg-themed-tertiary border border-themed flex items-center justify-center">
+                    <span className="text-xs font-medium text-themed-muted">
                       {index + 1}
                     </span>
                   </div>
@@ -118,7 +118,7 @@ export function ProcessingStatus({ steps, isVisible }: ProcessingStatusProps) {
                         ? "text-red-400"
                         : step.status === "in_progress"
                           ? "text-amber-400"
-                          : "text-slate-500"
+                          : "text-themed-muted"
                   }`}
                 >
                   {step.label}
@@ -134,7 +134,7 @@ export function ProcessingStatus({ steps, isVisible }: ProcessingStatusProps) {
         </div>
 
         {/* Progress bar */}
-        <div className="mt-6 h-1 bg-slate-800 rounded-full overflow-hidden">
+        <div className="mt-6 h-1 bg-themed-tertiary rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-500 ease-out"
             style={{
