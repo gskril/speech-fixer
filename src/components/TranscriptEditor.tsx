@@ -22,13 +22,12 @@ export function TranscriptEditor({
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Get indices of actual words (not spacing/punctuation)
   const wordIndices = useMemo(
-    () => words.map((w, i) => (w.type === "word" ? i : -1)).filter((i) => i !== -1),
+    () =>
+      words.map((w, i) => (w.type === "word" ? i : -1)).filter((i) => i !== -1),
     [words]
   );
 
-  // Compute effective selection from both local state and parent prop
   const effectiveSelection = useMemo(() => {
     if (selectedIndices) {
       return { start: selectedIndices.start, end: selectedIndices.end };
@@ -36,7 +35,7 @@ export function TranscriptEditor({
     if (selectionStart !== null && selectionEnd !== null) {
       return {
         start: Math.min(selectionStart, selectionEnd),
-        end: Math.max(selectionStart, selectionEnd)
+        end: Math.max(selectionStart, selectionEnd),
       };
     }
     return null;
@@ -101,17 +100,17 @@ export function TranscriptEditor({
     (e: React.KeyboardEvent) => {
       if (wordIndices.length === 0) return;
 
-      const currentWordIndexPos = focusedIndex !== null
-        ? wordIndices.indexOf(focusedIndex)
-        : -1;
+      const currentWordIndexPos =
+        focusedIndex !== null ? wordIndices.indexOf(focusedIndex) : -1;
 
       switch (e.key) {
         case "ArrowRight":
         case "ArrowDown": {
           e.preventDefault();
-          const nextPos = currentWordIndexPos < wordIndices.length - 1
-            ? currentWordIndexPos + 1
-            : currentWordIndexPos;
+          const nextPos =
+            currentWordIndexPos < wordIndices.length - 1
+              ? currentWordIndexPos + 1
+              : currentWordIndexPos;
           const nextIndex = nextPos >= 0 ? wordIndices[nextPos] : wordIndices[0];
           setFocusedIndex(nextIndex);
 
@@ -130,9 +129,7 @@ export function TranscriptEditor({
         case "ArrowLeft":
         case "ArrowUp": {
           e.preventDefault();
-          const prevPos = currentWordIndexPos > 0
-            ? currentWordIndexPos - 1
-            : 0;
+          const prevPos = currentWordIndexPos > 0 ? currentWordIndexPos - 1 : 0;
           const prevIndex = wordIndices[prevPos] ?? wordIndices[0];
           setFocusedIndex(prevIndex);
 
@@ -186,43 +183,71 @@ export function TranscriptEditor({
 
   if (!words || words.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-        <p className="text-gray-500 dark:text-gray-400 text-center">
-          No transcription available
-        </p>
+      <div className="card p-6">
+        <p className="text-slate-500 text-center">No transcription available</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+    <div className="card p-5">
+      {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Transcript
-          </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Click and drag, or use arrow keys + Shift to select
-          </p>
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-md bg-slate-800 flex items-center justify-center">
+            <svg
+              className="w-3.5 h-3.5 text-slate-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+          </div>
+          <span className="text-sm font-medium text-slate-300">Transcript</span>
         </div>
 
         {effectiveSelection && (
           <button
             onClick={clearSelection}
-            className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            className="tag hover:bg-slate-700 transition-colors cursor-pointer"
           >
-            Clear Selection
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+            Clear
           </button>
         )}
       </div>
 
+      {/* Instructions */}
+      <p className="text-xs text-slate-500 mb-4">
+        Click and drag to select words, or use arrow keys + Shift
+      </p>
+
+      {/* Transcript text */}
       <div
         ref={containerRef}
         tabIndex={0}
         role="textbox"
         aria-label="Transcript text. Use arrow keys to navigate, Shift+arrows to select, Escape to clear."
         onKeyDown={handleKeyDown}
-        className="text-lg leading-relaxed select-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg p-2 -m-2"
+        className="text-base sm:text-lg leading-relaxed select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 rounded-lg p-3 -m-3 text-slate-300"
         style={{ userSelect: "none" }}
       >
         {words.map((word, index) => {
@@ -230,7 +255,6 @@ export function TranscriptEditor({
           const active = isWordActive(word);
           const focused = focusedIndex === index;
 
-          // Don't render spacing items separately, just add space logic
           if (word.type === "spacing") {
             return <span key={index}> </span>;
           }
@@ -242,10 +266,10 @@ export function TranscriptEditor({
               onMouseEnter={() => handleWordMouseEnter(index)}
               className={`
                 ${word.type === "word" ? "cursor-pointer" : ""}
-                ${selected ? "bg-blue-200 dark:bg-blue-800 rounded" : ""}
-                ${active ? "text-blue-600 dark:text-blue-400 font-medium" : "text-gray-800 dark:text-gray-200"}
-                ${word.type === "word" && !selected ? "hover:bg-gray-100 dark:hover:bg-gray-700 rounded" : ""}
-                ${focused && word.type === "word" ? "ring-2 ring-blue-400 ring-offset-1" : ""}
+                ${selected ? "bg-amber-500/30 text-amber-200 rounded px-0.5 -mx-0.5" : ""}
+                ${active && !selected ? "text-amber-400" : ""}
+                ${word.type === "word" && !selected ? "hover:bg-slate-700/50 rounded" : ""}
+                ${focused && word.type === "word" ? "ring-2 ring-amber-400/50 ring-offset-1 ring-offset-slate-900 rounded" : ""}
                 transition-colors duration-100
               `}
             >

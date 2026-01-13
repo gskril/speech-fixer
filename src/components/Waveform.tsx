@@ -28,7 +28,6 @@ export function Waveform({
   const [duration, setDuration] = useState(0);
   const [isReady, setIsReady] = useState(false);
 
-  // Keep refs up to date with latest callback values
   useEffect(() => {
     onRegionSelectRef.current = onRegionSelect;
   }, [onRegionSelect]);
@@ -37,35 +36,29 @@ export function Waveform({
     onTimeUpdateRef.current = onTimeUpdate;
   }, [onTimeUpdate]);
 
-  // Initialize WaveSurfer
   useEffect(() => {
     if (!containerRef.current || !audioUrl) return;
 
-    // Create regions plugin
     const regions = RegionsPlugin.create();
     regionsRef.current = regions;
 
-    // Create WaveSurfer instance
     const wavesurfer = WaveSurfer.create({
       container: containerRef.current,
-      waveColor: "#94a3b8",
-      progressColor: "#3b82f6",
-      cursorColor: "#1d4ed8",
+      waveColor: "#57534e",
+      progressColor: "#fbbf24",
+      cursorColor: "#f59e0b",
       cursorWidth: 2,
       barWidth: 2,
-      barGap: 1,
+      barGap: 2,
       barRadius: 2,
-      height: 128,
+      height: 100,
       normalize: true,
       plugins: [regions],
     });
 
     wavesurferRef.current = wavesurfer;
-
-    // Load audio
     wavesurfer.load(audioUrl);
 
-    // Event listeners
     wavesurfer.on("ready", () => {
       setDuration(wavesurfer.getDuration());
       setIsReady(true);
@@ -73,15 +66,13 @@ export function Waveform({
 
     wavesurfer.on("play", () => setIsPlaying(true));
     wavesurfer.on("pause", () => setIsPlaying(false));
-    
+
     wavesurfer.on("timeupdate", (time) => {
       setCurrentTime(time);
       onTimeUpdateRef.current?.(time);
     });
 
-    // Region events
     regions.on("region-created", (region) => {
-      // Remove any existing regions
       if (activeRegionRef.current && activeRegionRef.current.id !== region.id) {
         activeRegionRef.current.remove();
       }
@@ -92,9 +83,8 @@ export function Waveform({
       onRegionSelectRef.current?.(region.start, region.end);
     });
 
-    // Enable drag selection for creating regions
     regions.enableDragSelection({
-      color: "rgba(59, 130, 246, 0.3)",
+      color: "rgba(251, 191, 36, 0.2)",
     });
 
     return () => {
@@ -106,18 +96,16 @@ export function Waveform({
     };
   }, [audioUrl]);
 
-  // Update region when selectedRegion prop changes
   useEffect(() => {
     if (!regionsRef.current || !isReady) return;
 
-    // Clear existing regions
     regionsRef.current.clearRegions();
 
     if (selectedRegion) {
       activeRegionRef.current = regionsRef.current.addRegion({
         start: selectedRegion.start,
         end: selectedRegion.end,
-        color: "rgba(59, 130, 246, 0.3)",
+        color: "rgba(251, 191, 36, 0.2)",
         drag: true,
         resize: true,
       });
@@ -145,46 +133,74 @@ export function Waveform({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-      <div className="mb-4">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Audio Waveform
-        </h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400">
-          Click and drag on the waveform to select a region
-        </p>
+    <div className="card p-5">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-md bg-slate-800 flex items-center justify-center">
+            <svg
+              className="w-3.5 h-3.5 text-slate-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+              />
+            </svg>
+          </div>
+          <span className="text-sm font-medium text-slate-300">Waveform</span>
+        </div>
+        <span className="text-xs text-slate-500">
+          Drag to select a region
+        </span>
       </div>
 
+      {/* Waveform container */}
       <div
         ref={containerRef}
-        className="w-full rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-900"
+        className="w-full rounded-lg overflow-hidden bg-slate-900/50 border border-slate-800"
       />
 
+      {/* Controls */}
       <div className="flex items-center justify-between mt-4">
         <div className="flex items-center gap-2">
+          {/* Play/Pause button */}
           <button
             onClick={togglePlayPause}
             disabled={!isReady}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white transition-colors"
+            className="btn btn-icon bg-amber-500 hover:bg-amber-400 disabled:bg-slate-700 disabled:cursor-not-allowed text-slate-950 transition-colors"
           >
             {isPlaying ? (
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
               </svg>
             ) : (
-              <svg className="w-5 h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-4 h-4 ml-0.5"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path d="M8 5v14l11-7z" />
               </svg>
             )}
           </button>
 
+          {/* Play Selection button */}
           {selectedRegion && (
             <button
               onClick={playRegion}
               disabled={!isReady}
-              className="flex items-center gap-1 px-3 py-2 rounded-lg bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm transition-colors"
+              className="btn btn-secondary text-sm py-2 px-3"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-3.5 h-3.5"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path d="M8 5v14l11-7z" />
               </svg>
               Play Selection
@@ -192,19 +208,29 @@ export function Waveform({
           )}
         </div>
 
-        <div className="text-sm text-gray-500 dark:text-gray-400 font-mono">
-          {formatTime(currentTime)} / {formatTime(duration)}
+        {/* Time display */}
+        <div className="font-mono text-sm text-slate-400 tabular-nums">
+          <span className="text-slate-200">{formatTime(currentTime)}</span>
+          <span className="mx-1.5 text-slate-600">/</span>
+          <span>{formatTime(duration)}</span>
         </div>
       </div>
 
+      {/* Selection info */}
       {selectedRegion && (
-        <div className="mt-3 px-3 py-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
-          <p className="text-xs text-blue-600 dark:text-blue-400">
-            Selected: {formatTime(selectedRegion.start)} - {formatTime(selectedRegion.end)}
-            <span className="ml-2 text-gray-500">
-              ({(selectedRegion.end - selectedRegion.start).toFixed(2)}s)
+        <div className="mt-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-amber-400">
+              Selection
             </span>
-          </p>
+            <span className="text-xs text-slate-400 font-mono tabular-nums">
+              {formatTime(selectedRegion.start)} -{" "}
+              {formatTime(selectedRegion.end)}
+              <span className="ml-2 text-slate-500">
+                ({(selectedRegion.end - selectedRegion.start).toFixed(2)}s)
+              </span>
+            </span>
+          </div>
         </div>
       )}
     </div>

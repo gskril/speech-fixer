@@ -16,62 +16,131 @@ export function ProcessingStatus({ steps, isVisible }: ProcessingStatusProps) {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6 text-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" />
+
+      {/* Modal */}
+      <div className="relative glass rounded-2xl p-8 max-w-sm w-full mx-4 animate-scale-in">
+        {/* Animated icon */}
+        <div className="flex justify-center mb-6">
+          <div className="relative">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center glow-amber">
+              {/* Waveform bars */}
+              <div className="flex items-center gap-0.5">
+                {[0.4, 0.7, 1, 0.6, 0.8].map((height, i) => (
+                  <div
+                    key={i}
+                    className="w-1 bg-slate-950 rounded-full animate-pulse"
+                    style={{
+                      height: `${height * 24}px`,
+                      animationDelay: `${i * 0.15}s`,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+            {/* Pulse ring */}
+            <div className="absolute inset-0 rounded-2xl border-2 border-amber-400/30 animate-pulse-ring" />
+          </div>
+        </div>
+
+        {/* Title */}
+        <h3 className="font-display text-lg font-semibold text-slate-100 text-center mb-6">
           Processing Audio
         </h3>
 
-        <div className="space-y-4">
+        {/* Steps */}
+        <div className="space-y-3">
           {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center gap-4">
+            <div
+              key={step.id}
+              className="flex items-center gap-3 animate-fade-in"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              {/* Status indicator */}
               <div className="flex-shrink-0">
                 {step.status === "pending" && (
-                  <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">{index + 1}</span>
+                  <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
+                    <span className="text-xs font-medium text-slate-500">
+                      {index + 1}
+                    </span>
                   </div>
                 )}
                 {step.status === "in_progress" && (
-                  <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+                  <div className="w-7 h-7 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+                    <div className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
                   </div>
                 )}
                 {step.status === "completed" && (
-                  <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <div className="w-7 h-7 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center">
+                    <svg
+                      className="w-4 h-4 text-green-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2.5}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                   </div>
                 )}
                 {step.status === "error" && (
-                  <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <div className="w-7 h-7 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
+                    <svg
+                      className="w-4 h-4 text-red-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2.5}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                   </div>
                 )}
               </div>
 
-              <div className="flex-1">
+              {/* Label */}
+              <div className="flex-1 min-w-0">
                 <p
-                  className={`text-sm font-medium ${
+                  className={`text-sm font-medium truncate ${
                     step.status === "completed"
-                      ? "text-green-600 dark:text-green-400"
+                      ? "text-green-400"
                       : step.status === "error"
-                      ? "text-red-600 dark:text-red-400"
-                      : step.status === "in_progress"
-                      ? "text-blue-600 dark:text-blue-400"
-                      : "text-gray-500 dark:text-gray-400"
+                        ? "text-red-400"
+                        : step.status === "in_progress"
+                          ? "text-amber-400"
+                          : "text-slate-500"
                   }`}
                 >
                   {step.label}
                 </p>
                 {step.error && (
-                  <p className="text-xs text-red-500 mt-1">{step.error}</p>
+                  <p className="text-xs text-red-400/70 mt-0.5 truncate">
+                    {step.error}
+                  </p>
                 )}
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Progress bar */}
+        <div className="mt-6 h-1 bg-slate-800 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-500 ease-out"
+            style={{
+              width: `${(steps.filter((s) => s.status === "completed").length / steps.length) * 100}%`,
+            }}
+          />
         </div>
       </div>
     </div>

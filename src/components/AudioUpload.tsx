@@ -10,7 +10,10 @@ interface AudioUploadProps {
   isLoading?: boolean;
 }
 
-export function AudioUpload({ onFileSelect, isLoading = false }: AudioUploadProps) {
+export function AudioUpload({
+  onFileSelect,
+  isLoading = false,
+}: AudioUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
 
   const validateFile = useCallback((file: File): boolean => {
@@ -66,11 +69,11 @@ export function AudioUpload({ onFileSelect, isLoading = false }: AudioUploadProp
 
   return (
     <div
-      className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
-        isDragging
-          ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-          : "border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600"
-      } ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
+      className={`
+        relative card p-8 sm:p-12 transition-all duration-300 group
+        ${isDragging ? "border-amber-500/50 bg-amber-500/5 glow-amber" : "hover:border-slate-600"}
+        ${isLoading ? "opacity-50 pointer-events-none" : "cursor-pointer"}
+      `}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -82,41 +85,82 @@ export function AudioUpload({ onFileSelect, isLoading = false }: AudioUploadProp
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         disabled={isLoading}
       />
-      
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+
+      <div className="flex flex-col items-center text-center">
+        {/* Animated waveform icon */}
+        <div className="relative mb-6">
+          <div
+            className={`
+              w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-300
+              ${isDragging ? "bg-amber-500/20" : "bg-slate-800/80 group-hover:bg-slate-800"}
+            `}
+          >
+            {/* Waveform bars animation */}
+            <div className="flex items-center gap-1">
+              {[0.4, 0.7, 1, 0.6, 0.8, 0.5, 0.9].map((height, i) => (
+                <div
+                  key={i}
+                  className={`
+                    w-1 rounded-full transition-all duration-300
+                    ${isDragging ? "bg-amber-400" : "bg-slate-500 group-hover:bg-amber-400/70"}
+                  `}
+                  style={{
+                    height: `${height * 32}px`,
+                    animationDelay: `${i * 0.1}s`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Decorative ring */}
+          <div
+            className={`
+              absolute inset-0 rounded-2xl border-2 transition-all duration-300
+              ${isDragging ? "border-amber-400/30 scale-110" : "border-transparent"}
+            `}
+          />
+        </div>
+
+        {/* Text content */}
+        <div className="space-y-2 mb-6">
+          <p className="text-lg font-medium text-slate-200">
+            {isDragging ? "Drop it here" : "Drop your audio file"}
+          </p>
+          <p className="text-sm text-slate-500">
+            or{" "}
+            <span className="text-amber-400 underline underline-offset-2">
+              browse files
+            </span>
+          </p>
+        </div>
+
+        {/* Format badge */}
+        <div className="tag">
           <svg
-            className="w-8 h-8 text-white"
+            className="w-3 h-3"
             fill="none"
-            stroke="currentColor"
             viewBox="0 0 24 24"
+            stroke="currentColor"
           >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
             />
           </svg>
+          MP3 up to {MAX_FILE_SIZE_MB}MB
         </div>
-        
-        <div>
-          <p className="text-lg font-medium text-gray-700 dark:text-gray-200">
-            {isDragging ? "Drop your audio file here" : "Drag & drop your audio file"}
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            or click to browse
-          </p>
-        </div>
-        
-        <p className="text-xs text-gray-400 dark:text-gray-500">
-          MP3 format, max {MAX_FILE_SIZE_MB}MB
-        </p>
       </div>
 
+      {/* Loading overlay */}
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 rounded-xl">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent"></div>
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-950/50 rounded-xl backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm text-slate-300">Processing...</span>
+          </div>
         </div>
       )}
     </div>

@@ -7,7 +7,12 @@ import { TranscriptEditor } from "@/components/TranscriptEditor";
 import { ReplacementInput } from "@/components/ReplacementInput";
 import { ProcessingStatus } from "@/components/ProcessingStatus";
 import { TranscriptionResult, WordSelection } from "@/lib/types";
-import { useTranscribe, useCloneVoice, useDeleteVoice, useReplaceAudio } from "@/hooks/useApi";
+import {
+  useTranscribe,
+  useCloneVoice,
+  useDeleteVoice,
+  useReplaceAudio,
+} from "@/hooks/useApi";
 
 interface ProcessingStep {
   id: string;
@@ -19,11 +24,15 @@ interface ProcessingStep {
 export default function Home() {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [transcription, setTranscription] = useState<TranscriptionResult | null>(null);
+  const [transcription, setTranscription] =
+    useState<TranscriptionResult | null>(null);
   const [voiceId, setVoiceId] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [selection, setSelection] = useState<WordSelection | null>(null);
-  const [selectedRegion, setSelectedRegion] = useState<{ start: number; end: number } | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<{
+    start: number;
+    end: number;
+  } | null>(null);
 
   // React Query mutations
   const transcribeMutation = useTranscribe();
@@ -42,7 +51,10 @@ export default function Home() {
     const handleBeforeUnload = () => {
       if (voiceIdRef.current) {
         const data = JSON.stringify({ voiceId: voiceIdRef.current });
-        navigator.sendBeacon("/api/clone-voice", new Blob([data], { type: "application/json" }));
+        navigator.sendBeacon(
+          "/api/clone-voice",
+          new Blob([data], { type: "application/json" })
+        );
       }
     };
 
@@ -69,7 +81,10 @@ export default function Home() {
   }, [audioUrl]);
 
   // Derive processing state from mutations
-  const isProcessing = transcribeMutation.isPending || cloneVoiceMutation.isPending || replaceAudio.isPending;
+  const isProcessing =
+    transcribeMutation.isPending ||
+    cloneVoiceMutation.isPending ||
+    replaceAudio.isPending;
 
   // Derive error from mutations
   const error = useMemo(() => {
@@ -77,28 +92,43 @@ export default function Home() {
     if (cloneVoiceMutation.error) return cloneVoiceMutation.error.message;
     if (replaceAudio.error) return replaceAudio.error.message;
     return null;
-  }, [transcribeMutation.error, cloneVoiceMutation.error, replaceAudio.error]);
+  }, [
+    transcribeMutation.error,
+    cloneVoiceMutation.error,
+    replaceAudio.error,
+  ]);
 
   // Derive processing steps from mutation states
   const processingSteps = useMemo((): ProcessingStep[] => {
     // File processing steps
-    if (transcribeMutation.isPending || cloneVoiceMutation.isPending ||
-        (transcribeMutation.isSuccess && cloneVoiceMutation.isIdle)) {
+    if (
+      transcribeMutation.isPending ||
+      cloneVoiceMutation.isPending ||
+      (transcribeMutation.isSuccess && cloneVoiceMutation.isIdle)
+    ) {
       return [
         {
           id: "transcribe",
           label: "Transcribing audio...",
-          status: transcribeMutation.isPending ? "in_progress" :
-                  transcribeMutation.isSuccess ? "completed" :
-                  transcribeMutation.isError ? "error" : "pending",
+          status: transcribeMutation.isPending
+            ? "in_progress"
+            : transcribeMutation.isSuccess
+              ? "completed"
+              : transcribeMutation.isError
+                ? "error"
+                : "pending",
           error: transcribeMutation.error?.message,
         },
         {
           id: "clone",
           label: "Creating voice clone...",
-          status: cloneVoiceMutation.isPending ? "in_progress" :
-                  cloneVoiceMutation.isSuccess ? "completed" :
-                  cloneVoiceMutation.isError ? "error" : "pending",
+          status: cloneVoiceMutation.isPending
+            ? "in_progress"
+            : cloneVoiceMutation.isSuccess
+              ? "completed"
+              : cloneVoiceMutation.isError
+                ? "error"
+                : "pending",
           error: cloneVoiceMutation.error?.message,
         },
       ];
@@ -110,66 +140,91 @@ export default function Home() {
         {
           id: "synthesize",
           label: "Generating new audio...",
-          status: synthesizeStatus === "pending" ? "in_progress" :
-                  synthesizeStatus === "success" ? "completed" :
-                  synthesizeStatus === "error" ? "error" : "pending",
+          status:
+            synthesizeStatus === "pending"
+              ? "in_progress"
+              : synthesizeStatus === "success"
+                ? "completed"
+                : synthesizeStatus === "error"
+                  ? "error"
+                  : "pending",
         },
         {
           id: "splice",
           label: "Splicing audio...",
-          status: spliceStatus === "pending" ? "in_progress" :
-                  spliceStatus === "success" ? "completed" :
-                  spliceStatus === "error" ? "error" : "pending",
+          status:
+            spliceStatus === "pending"
+              ? "in_progress"
+              : spliceStatus === "success"
+                ? "completed"
+                : spliceStatus === "error"
+                  ? "error"
+                  : "pending",
         },
       ];
     }
 
     return [];
   }, [
-    transcribeMutation.isPending, transcribeMutation.isSuccess, transcribeMutation.isError, transcribeMutation.error,
-    cloneVoiceMutation.isPending, cloneVoiceMutation.isSuccess, cloneVoiceMutation.isError, cloneVoiceMutation.error, cloneVoiceMutation.isIdle,
-    replaceAudio.isPending, synthesizeStatus, spliceStatus,
+    transcribeMutation.isPending,
+    transcribeMutation.isSuccess,
+    transcribeMutation.isError,
+    transcribeMutation.error,
+    cloneVoiceMutation.isPending,
+    cloneVoiceMutation.isSuccess,
+    cloneVoiceMutation.isError,
+    cloneVoiceMutation.error,
+    cloneVoiceMutation.isIdle,
+    replaceAudio.isPending,
+    synthesizeStatus,
+    spliceStatus,
   ]);
 
-  const handleFileSelect = useCallback(async (file: File) => {
-    // Reset mutations
-    transcribeMutation.reset();
-    cloneVoiceMutation.reset();
-    replaceAudio.reset();
+  const handleFileSelect = useCallback(
+    async (file: File) => {
+      // Reset mutations
+      transcribeMutation.reset();
+      cloneVoiceMutation.reset();
+      replaceAudio.reset();
 
-    setAudioFile(file);
-    const url = URL.createObjectURL(file);
-    setAudioUrl(url);
+      setAudioFile(file);
+      const url = URL.createObjectURL(file);
+      setAudioUrl(url);
 
-    // Clear previous state
-    setTranscription(null);
-    setVoiceId(null);
-    setSelection(null);
-    setSelectedRegion(null);
-
-    try {
-      // Run transcription first, then voice cloning
-      const transcriptionData = await transcribeMutation.mutateAsync(file);
-      setTranscription(transcriptionData);
-
-      const cloneData = await cloneVoiceMutation.mutateAsync(file);
-      setVoiceId(cloneData.voice_id);
-    } catch {
-      // Error is handled by the mutation state
-    }
-  }, [transcribeMutation, cloneVoiceMutation, replaceAudio]);
-
-  const handleSelectionChange = useCallback((newSelection: WordSelection | null) => {
-    setSelection(newSelection);
-    if (newSelection) {
-      setSelectedRegion({
-        start: newSelection.startTime,
-        end: newSelection.endTime,
-      });
-    } else {
+      // Clear previous state
+      setTranscription(null);
+      setVoiceId(null);
+      setSelection(null);
       setSelectedRegion(null);
-    }
-  }, []);
+
+      try {
+        // Run transcription first, then voice cloning
+        const transcriptionData = await transcribeMutation.mutateAsync(file);
+        setTranscription(transcriptionData);
+
+        const cloneData = await cloneVoiceMutation.mutateAsync(file);
+        setVoiceId(cloneData.voice_id);
+      } catch {
+        // Error is handled by the mutation state
+      }
+    },
+    [transcribeMutation, cloneVoiceMutation, replaceAudio]
+  );
+
+  const handleSelectionChange = useCallback(
+    (newSelection: WordSelection | null) => {
+      setSelection(newSelection);
+      if (newSelection) {
+        setSelectedRegion({
+          start: newSelection.startTime,
+          end: newSelection.endTime,
+        });
+      } else {
+        setSelectedRegion(null);
+      }
+    },
+    []
+  );
 
   const handleRegionSelect = useCallback(
     (start: number, end: number) => {
@@ -229,7 +284,9 @@ export default function Home() {
         // Create new File and URL from spliced audio
         const response = await fetch(`data:audio/mpeg;base64,${result.audio}`);
         const newBlob = await response.blob();
-        const newFile = new File([newBlob], audioFile.name, { type: "audio/mpeg" });
+        const newFile = new File([newBlob], audioFile.name, {
+          type: "audio/mpeg",
+        });
 
         // Revoke old URL
         if (audioUrl) {
@@ -245,7 +302,8 @@ export default function Home() {
         if (transcription) {
           const newWords = [...transcription.words];
           const originalDuration = selection.endTime - selection.startTime;
-          const estimatedDuration = originalDuration * (newText.length / selection.selectedText.length);
+          const estimatedDuration =
+            originalDuration * (newText.length / selection.selectedText.length);
           const timeOffset = estimatedDuration - originalDuration;
 
           const newWord = {
@@ -255,7 +313,11 @@ export default function Home() {
             type: "word" as const,
           };
 
-          newWords.splice(selection.startIndex, selection.endIndex - selection.startIndex + 1, newWord);
+          newWords.splice(
+            selection.startIndex,
+            selection.endIndex - selection.startIndex + 1,
+            newWord
+          );
 
           for (let i = selection.startIndex + 1; i < newWords.length; i++) {
             newWords[i] = {
@@ -316,68 +378,114 @@ export default function Home() {
     setVoiceId(null);
     setSelection(null);
     setSelectedRegion(null);
-  }, [voiceId, audioUrl, deleteVoiceMutation, transcribeMutation, cloneVoiceMutation, replaceAudio]);
+  }, [
+    voiceId,
+    audioUrl,
+    deleteVoiceMutation,
+    transcribeMutation,
+    cloneVoiceMutation,
+    replaceAudio,
+  ]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
+    <div className="relative min-h-screen">
       <ProcessingStatus steps={processingSteps} isVisible={isProcessing} />
 
-      <div className="max-w-5xl mx-auto px-4 py-12">
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-            Speech Fixer
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Fix or replace words in audio recordings using AI voice synthesis.
-            Upload an MP3, select words to replace, and let AI do the rest.
+        <header className="mb-10 sm:mb-14">
+          <div className="flex items-center gap-3 mb-4">
+            {/* Logo mark */}
+            <div className="relative">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center glow-amber">
+                <svg
+                  className="w-5 h-5 text-slate-950"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                  />
+                </svg>
+              </div>
+            </div>
+            <h1 className="font-display text-2xl sm:text-3xl font-semibold text-slate-100 tracking-tight">
+              Speech Fixer
+            </h1>
+          </div>
+          <p className="text-slate-400 text-base sm:text-lg max-w-xl text-balance leading-relaxed">
+            Fix words in your recordings with AI. Upload audio, select what to
+            change, and let voice cloning do the rest.
           </p>
-        </div>
+        </header>
 
         {/* Error Display */}
         {error && (
-          <div className="mb-8 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl">
-            <div className="flex items-center gap-3">
-              <svg
-                className="w-5 h-5 text-red-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <p className="text-red-600 dark:text-red-400">{error}</p>
+          <div className="mb-6 animate-fade-in">
+            <div className="card p-4 border-red-500/30 bg-red-500/5">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                  <svg
+                    className="w-4 h-4 text-red-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-red-400">
+                    Something went wrong
+                  </p>
+                  <p className="text-sm text-red-400/70 mt-0.5">{error}</p>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {/* Upload Section */}
         {!audioUrl && (
-          <AudioUpload onFileSelect={handleFileSelect} isLoading={isProcessing} />
+          <div className="animate-fade-in">
+            <AudioUpload
+              onFileSelect={handleFileSelect}
+              isLoading={isProcessing}
+            />
+          </div>
         )}
 
         {/* Editor Section */}
         {audioUrl && (
-          <div className="space-y-6">
+          <div className="space-y-5 animate-fade-in">
             {/* Controls Bar */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="tag tag-amber">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  Ready
+                </div>
+                <span className="text-sm text-slate-400 truncate">
                   {audioFile?.name}
                 </span>
               </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleDownload}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-2">
+                <button onClick={handleDownload} className="btn btn-primary">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -387,11 +495,13 @@ export default function Home() {
                   </svg>
                   Download
                 </button>
-                <button
-                  onClick={handleReset}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button onClick={handleReset} className="btn btn-secondary">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -405,49 +515,62 @@ export default function Home() {
             </div>
 
             {/* Waveform */}
-            <Waveform
-              audioUrl={audioUrl}
-              selectedRegion={selectedRegion}
-              onRegionSelect={handleRegionSelect}
-              onTimeUpdate={setCurrentTime}
-            />
+            <div className="animate-slide-up stagger-1 opacity-0">
+              <Waveform
+                audioUrl={audioUrl}
+                selectedRegion={selectedRegion}
+                onRegionSelect={handleRegionSelect}
+                onTimeUpdate={setCurrentTime}
+              />
+            </div>
 
             {/* Transcript */}
             {transcription && (
-              <TranscriptEditor
-                words={transcription.words}
-                currentTime={currentTime}
-                onSelectionChange={handleSelectionChange}
-                selectedIndices={
-                  selection
-                    ? { start: selection.startIndex, end: selection.endIndex }
-                    : null
-                }
-              />
+              <div className="animate-slide-up stagger-2 opacity-0">
+                <TranscriptEditor
+                  words={transcription.words}
+                  currentTime={currentTime}
+                  onSelectionChange={handleSelectionChange}
+                  selectedIndices={
+                    selection
+                      ? { start: selection.startIndex, end: selection.endIndex }
+                      : null
+                  }
+                />
+              </div>
             )}
 
             {/* Replacement Input */}
-            <ReplacementInput
-              selection={selection}
-              onReplace={handleReplace}
-              isProcessing={isProcessing}
-            />
+            <div className="animate-slide-up stagger-3 opacity-0">
+              <ReplacementInput
+                selection={selection}
+                onReplace={handleReplace}
+                isProcessing={isProcessing}
+              />
+            </div>
 
             {/* Voice Clone Status */}
             {voiceId && (
-              <div className="text-center">
-                <p className="text-xs text-gray-400 dark:text-gray-500">
-                  Voice clone ready • ID: {voiceId.slice(0, 8)}...
-                </p>
+              <div className="flex justify-center animate-fade-in stagger-4 opacity-0">
+                <div className="tag">
+                  <svg
+                    className="w-3 h-3 text-green-400"
+                    fill="currentColor"
+                    viewBox="0 0 8 8"
+                  >
+                    <circle cx="4" cy="4" r="3" />
+                  </svg>
+                  Voice clone active
+                </div>
               </div>
             )}
           </div>
         )}
 
         {/* Footer */}
-        <footer className="mt-16 text-center">
-          <p className="text-xs text-gray-400 dark:text-gray-600">
-            Powered by Eleven Labs AI Voice Technology
+        <footer className="mt-16 pt-8 border-t border-slate-800/50">
+          <p className="text-xs text-slate-600 text-center">
+            Powered by ElevenLabs voice synthesis
           </p>
         </footer>
       </div>
