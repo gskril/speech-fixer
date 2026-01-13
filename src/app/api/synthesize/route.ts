@@ -28,9 +28,9 @@ export async function POST(request: NextRequest) {
       previousText: previousText || undefined,
       nextText: nextText || undefined,
       voiceSettings: {
-        stability: 0.7, // Higher stability for consistent pronunciation
+        stability: 0.5, // Balance between consistency and expressiveness
         similarityBoost: 0.9, // High similarity to original voice
-        style: 0.2, // Subtle style for natural speech
+        style: 0.3, // Natural expressiveness
         useSpeakerBoost: true, // Enhance voice clarity
       },
     });
