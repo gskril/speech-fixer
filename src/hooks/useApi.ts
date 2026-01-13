@@ -68,6 +68,8 @@ export function useDeleteVoice() {
 interface SynthesizeParams {
   text: string;
   voiceId: string;
+  previousText?: string;
+  nextText?: string;
 }
 
 interface SynthesizeResult {
@@ -76,11 +78,11 @@ interface SynthesizeResult {
 
 export function useSynthesize() {
   return useMutation({
-    mutationFn: async ({ text, voiceId }: SynthesizeParams): Promise<SynthesizeResult> => {
+    mutationFn: async ({ text, voiceId, previousText, nextText }: SynthesizeParams): Promise<SynthesizeResult> => {
       const res = await fetch("/api/synthesize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, voiceId }),
+        body: JSON.stringify({ text, voiceId, previousText, nextText }),
       });
 
       if (!res.ok) {
@@ -173,15 +175,24 @@ export function useReplaceAudio() {
       originalAudio,
       startTime,
       endTime,
+      previousText,
+      nextText,
     }: {
       text: string;
       voiceId: string;
       originalAudio: File;
       startTime: number;
       endTime: number;
+      previousText?: string;
+      nextText?: string;
     }) => {
-      // First synthesize the new audio
-      const synthResult = await synthesize.mutateAsync({ text, voiceId });
+      // First synthesize the new audio with surrounding context
+      const synthResult = await synthesize.mutateAsync({
+        text,
+        voiceId,
+        previousText,
+        nextText,
+      });
 
       // Then splice it into the original
       const spliceResult = await splice.mutateAsync({

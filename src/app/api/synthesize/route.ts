@@ -3,7 +3,7 @@ import { elevenlabs } from "@/lib/elevenlabs";
 
 export async function POST(request: NextRequest) {
   try {
-    const { text, voiceId } = await request.json();
+    const { text, voiceId, previousText, nextText } = await request.json();
 
     if (!text) {
       return NextResponse.json(
@@ -22,12 +22,15 @@ export async function POST(request: NextRequest) {
     // Generate speech using the cloned voice with optimized settings
     const audioStream = await elevenlabs.textToSpeech.convert(voiceId, {
       text: text,
-      modelId: "eleven_multilingual_v2", // Higher quality model for better voice matching
+      modelId: "eleven_english_v2",
       outputFormat: "mp3_44100_128",
+      // Provide surrounding text context for natural intonation and pacing
+      previousText: previousText || undefined,
+      nextText: nextText || undefined,
       voiceSettings: {
-        stability: 0.5, // Balance between consistency and expressiveness
+        stability: 0.7, // Higher stability for consistent pronunciation
         similarityBoost: 0.9, // High similarity to original voice
-        style: 0.3, // Slight style for natural speech
+        style: 0.2, // Subtle style for natural speech
         useSpeakerBoost: true, // Enhance voice clarity
       },
     });

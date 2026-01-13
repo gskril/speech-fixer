@@ -270,7 +270,18 @@ export default function Home() {
 
   const handleReplace = useCallback(
     async (newText: string) => {
-      if (!selection || !voiceId || !audioFile) return;
+      if (!selection || !voiceId || !audioFile || !transcription) return;
+
+      // Extract surrounding text for context (helps with natural intonation)
+      const words = transcription.words;
+
+      // Get up to 10 words before the selection
+      const beforeWords = words.slice(Math.max(0, selection.startIndex - 10), selection.startIndex);
+      const previousText = beforeWords.map(w => w.text).join("");
+
+      // Get up to 10 words after the selection
+      const afterWords = words.slice(selection.endIndex + 1, selection.endIndex + 11);
+      const nextText = afterWords.map(w => w.text).join("");
 
       try {
         const result = await replaceAudio.mutateAsync({
@@ -279,6 +290,8 @@ export default function Home() {
           originalAudio: audioFile,
           startTime: selection.startTime,
           endTime: selection.endTime,
+          previousText: previousText || undefined,
+          nextText: nextText || undefined,
         });
 
         // Create new File and URL from spliced audio
