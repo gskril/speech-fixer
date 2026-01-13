@@ -16,9 +16,22 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://speech.gregskril.com"),
   title: "Speech Fixer - Fix Words in Audio",
   description:
     "Fix or replace words in audio recordings using AI voice synthesis. Perfect for podcasters and content creators.",
+  openGraph: {
+    title: "Speech Fixer - Fix Words in Audio",
+    description:
+      "Fix or replace words in audio recordings using AI voice synthesis. Perfect for podcasters and content creators.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Speech Fixer - Fix Words in Audio",
+    description:
+      "Fix or replace words in audio recordings using AI voice synthesis.",
+  },
 };
 
 export default function RootLayout({
