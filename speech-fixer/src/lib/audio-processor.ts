@@ -20,16 +20,17 @@ export interface SpliceParams {
  */
 export async function spliceAudio(params: SpliceParams): Promise<string> {
   const { originalAudioPath, replacementAudioPath, startTime, endTime, outputPath } = params;
-  
+
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "splice-"));
   const beforePath = path.join(tempDir, "before.mp3");
   const afterPath = path.join(tempDir, "after.mp3");
+  const normalizedReplacementPath = path.join(tempDir, "replacement_normalized.mp3");
   const listPath = path.join(tempDir, "list.txt");
 
   try {
     // Get original audio duration
     const duration = await getAudioDuration(originalAudioPath);
-    
+
     const promises: Promise<void>[] = [];
 
     // Extract before segment (if there's content before startTime)
@@ -42,6 +43,9 @@ export async function spliceAudio(params: SpliceParams): Promise<string> {
       promises.push(extractSegment(originalAudioPath, endTime, duration, afterPath));
     }
 
+    // Normalize replacement audio to match the same format
+    promises.push(normalizeAudio(replacementAudioPath, normalizedReplacementPath));
+
     await Promise.all(promises);
 
     // Create concat list
@@ -49,7 +53,7 @@ export async function spliceAudio(params: SpliceParams): Promise<string> {
     if (startTime > 0) {
       files.push(`file '${beforePath}'`);
     }
-    files.push(`file '${replacementAudioPath}'`);
+    files.push(`file '${normalizedReplacementPath}'`);
     if (endTime < duration) {
       files.push(`file '${afterPath}'`);
     }
@@ -76,6 +80,24 @@ function extractSegment(
     ffmpeg(inputPath)
       .setStartTime(startTime)
       .setDuration(endTime - startTime)
+      .audioCodec("libmp3lame")
+      .audioFrequency(44100)
+      .audioBitrate("128k")
+      .audioChannels(2)
+      .output(outputPath)
+      .on("end", () => resolve())
+      .on("error", (err) => reject(err))
+      .run();
+  });
+}
+
+function normalizeAudio(inputPath: string, outputPath: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputPath)
+      .audioCodec("libmp3lame")
+      .audioFrequency(44100)
+      .audioBitrate("128k")
+      .audioChannels(2)
       .output(outputPath)
       .on("end", () => resolve())
       .on("error", (err) => reject(err))
@@ -88,7 +110,10 @@ function concatenateAudio(listPath: string, outputPath: string): Promise<void> {
     ffmpeg()
       .input(listPath)
       .inputOptions(["-f", "concat", "-safe", "0"])
-      .outputOptions(["-c", "copy"])
+      .audioCodec("libmp3lame")
+      .audioFrequency(44100)
+      .audioBitrate("128k")
+      .audioChannels(2)
       .output(outputPath)
       .on("end", () => resolve())
       .on("error", (err) => reject(err))
