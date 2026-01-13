@@ -1,7 +1,17 @@
 import ffmpeg from "fluent-ffmpeg";
+import ffmpegPath from "ffmpeg-static";
+import ffprobePath from "ffprobe-static";
 import path from "path";
 import fs from "fs/promises";
 import os from "os";
+
+// Configure fluent-ffmpeg to use bundled binaries
+if (ffmpegPath) {
+  ffmpeg.setFfmpegPath(ffmpegPath);
+}
+if (ffprobePath?.path) {
+  ffmpeg.setFfprobePath(ffprobePath.path);
+}
 
 export interface SpliceParams {
   originalAudioPath: string;
