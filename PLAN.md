@@ -96,48 +96,47 @@ Build a web app that allows users to fix or replace specific words/phrases in au
 ## Implementation Plan
 
 ### Phase 1: Project Setup
-- [ ] Initialize Next.js project with TypeScript
-- [ ] Install dependencies: wavesurfer.js, @elevenlabs/elevenlabs-js
-- [ ] Set up project structure (components, API routes, utils)
-- [ ] Configure environment variables for API key
+- [x] Initialize Next.js project with TypeScript
+- [x] Install dependencies: wavesurfer.js, @elevenlabs/elevenlabs-js
+- [x] Set up project structure (components, API routes, utils)
+- [x] Configure environment variables for API key
 
 ### Phase 2: Audio Upload & Transcription
-- [ ] Build upload component with file validation
-- [ ] Create `/api/transcribe` endpoint
-- [ ] Integrate Eleven Labs speech-to-text API
-- [ ] Display transcript with word-level data
+- [x] Build upload component with file validation
+- [x] Create `/api/transcribe` endpoint
+- [x] Integrate Eleven Labs speech-to-text API
+- [x] Display transcript with word-level data
 
 ### Phase 3: Waveform Visualization
-- [ ] Integrate WaveSurfer.js
-- [ ] Display uploaded audio waveform
-- [ ] Sync transcript words with waveform positions
-- [ ] Implement region selection on waveform
-- [ ] Add playback controls
+- [x] Integrate WaveSurfer.js
+- [x] Display uploaded audio waveform
+- [x] Sync transcript words with waveform positions
+- [x] Implement region selection on waveform
+- [x] Add playback controls
 
 ### Phase 4: Text-Based Editing Interface
-- [ ] Build transcript editor component
-- [ ] Enable word/phrase selection
-- [ ] Add inline text replacement input
-- [ ] Highlight selected region on waveform
+- [x] Build transcript editor component
+- [x] Enable word/phrase selection
+- [x] Add inline text replacement input
+- [x] Highlight selected region on waveform
 
 ### Phase 5: Voice Cloning & Synthesis
-- [ ] Create `/api/clone-voice` endpoint
-- [ ] Implement voice clone creation (cache voice_id)
-- [ ] Create `/api/synthesize` endpoint
-- [ ] Generate replacement audio via TTS
+- [x] Create `/api/clone-voice` endpoint
+- [x] Implement voice clone creation (cache voice_id)
+- [x] Create `/api/synthesize` endpoint
+- [x] Generate replacement audio via TTS
 
 ### Phase 6: Audio Splicing
-- [ ] Set up audio processing (FFmpeg or Web Audio API)
-- [ ] Create `/api/splice` endpoint
-- [ ] Implement audio segment replacement
-- [ ] Return updated audio file
+- [x] Set up audio processing (FFmpeg)
+- [x] Create `/api/splice` endpoint
+- [x] Implement audio segment replacement
+- [x] Return updated audio file
 
 ### Phase 7: Integration & Polish
-- [ ] Connect all components end-to-end
-- [ ] Add loading states and error handling
-- [ ] Implement audio download functionality
-- [ ] Test with various audio files
-- [ ] Add basic styling
+- [x] Connect all components end-to-end
+- [x] Add loading states and error handling
+- [x] Implement audio download functionality
+- [x] Add basic styling
 
 ## Critical Files & Technologies
 
@@ -146,24 +145,31 @@ Build a web app that allows users to fix or replace specific words/phrases in au
 - `react` - UI
 - `@elevenlabs/elevenlabs-js` - API client
 - `wavesurfer.js` - Waveform visualization
-- `fluent-ffmpeg` or Web Audio API - Audio processing
+- `fluent-ffmpeg` - Audio processing
 
 ### File Structure
 ```
-/app
-  /page.tsx - Main upload/editor interface
-  /api
-    /transcribe/route.ts
-    /clone-voice/route.ts
-    /synthesize/route.ts
-    /splice/route.ts
-/components
-  /AudioUpload.tsx
-  /Waveform.tsx
-  /TranscriptEditor.tsx
-/lib
-  /elevenlabs.ts - API client setup
-  /audio-processor.ts - Audio manipulation utils
+/speech-fixer
+  /src
+    /app
+      page.tsx - Main upload/editor interface
+      layout.tsx - App layout
+      globals.css - Global styles
+      /api
+        /transcribe/route.ts
+        /clone-voice/route.ts
+        /synthesize/route.ts
+        /splice/route.ts
+    /components
+      AudioUpload.tsx
+      Waveform.tsx
+      TranscriptEditor.tsx
+      ReplacementInput.tsx
+      ProcessingStatus.tsx
+    /lib
+      elevenlabs.ts - API client setup
+      audio-processor.ts - Audio manipulation utils
+      types.ts - TypeScript type definitions
 ```
 
 ## Confirmed Decisions
@@ -186,3 +192,11 @@ Build a web app that allows users to fix or replace specific words/phrases in au
 - Speech-to-speech API has 5-minute limit per segment
 - Billing: 1000 characters per minute of audio processed
 - Consider caching voice_id to avoid recreating for each edit
+
+## How to Run
+```bash
+cd speech-fixer
+npm install
+npm run dev
+```
+Then open http://localhost:3000 in your browser.
