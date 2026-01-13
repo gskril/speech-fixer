@@ -347,9 +347,11 @@ export default function Home() {
   const handleDownload = useCallback(() => {
     if (!audioUrl || !audioFile) return;
 
+    // Output is always MP3, so replace original extension
+    const baseName = audioFile.name.replace(/\.[^/.]+$/, "");
     const link = document.createElement("a");
     link.href = audioUrl;
-    link.download = `edited-${audioFile.name}`;
+    link.download = `edited-${baseName}.mp3`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
