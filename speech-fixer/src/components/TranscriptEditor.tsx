@@ -19,7 +19,14 @@ export function TranscriptEditor({
   const [selectionStart, setSelectionStart] = useState<number | null>(null);
   const [selectionEnd, setSelectionEnd] = useState<number | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Get indices of actual words (not spacing/punctuation)
+  const wordIndices = useMemo(
+    () => words.map((w, i) => (w.type === "word" ? i : -1)).filter((i) => i !== -1),
+    [words]
+  );
 
   // Compute effective selection from both local state and parent prop
   const effectiveSelection = useMemo(() => {
@@ -27,18 +34,42 @@ export function TranscriptEditor({
       return { start: selectedIndices.start, end: selectedIndices.end };
     }
     if (selectionStart !== null && selectionEnd !== null) {
-      return { 
-        start: Math.min(selectionStart, selectionEnd), 
-        end: Math.max(selectionStart, selectionEnd) 
+      return {
+        start: Math.min(selectionStart, selectionEnd),
+        end: Math.max(selectionStart, selectionEnd)
       };
     }
     return null;
   }, [selectedIndices, selectionStart, selectionEnd]);
 
+  const commitSelection = useCallback(
+    (start: number, end: number) => {
+      const selectedWords = words.slice(start, end + 1);
+      const hasWords = selectedWords.some((w) => w.type === "word");
+
+      if (hasWords) {
+        const wordItems = selectedWords.filter((w) => w.type === "word");
+        const startTime = wordItems[0]?.start ?? words[start].start;
+        const endTime = wordItems[wordItems.length - 1]?.end ?? words[end].end;
+        const selectedText = selectedWords.map((w) => w.text).join("");
+
+        onSelectionChange?.({
+          startIndex: start,
+          endIndex: end,
+          startTime,
+          endTime,
+          selectedText,
+        });
+      }
+    },
+    [words, onSelectionChange]
+  );
+
   const handleWordMouseDown = useCallback((index: number) => {
     setIsSelecting(true);
     setSelectionStart(index);
     setSelectionEnd(index);
+    setFocusedIndex(index);
   }, []);
 
   const handleWordMouseEnter = useCallback(
@@ -54,31 +85,90 @@ export function TranscriptEditor({
     if (isSelecting && selectionStart !== null && selectionEnd !== null) {
       const start = Math.min(selectionStart, selectionEnd);
       const end = Math.max(selectionStart, selectionEnd);
-
-      // Find actual word indices (skip punctuation-only selections)
-      const selectedWords = words.slice(start, end + 1);
-      const hasWords = selectedWords.some((w) => w.type === "word");
-
-      if (hasWords) {
-        // Find time range from selected words
-        const wordItems = selectedWords.filter((w) => w.type === "word");
-        const startTime = wordItems[0]?.start ?? words[start].start;
-        const endTime = wordItems[wordItems.length - 1]?.end ?? words[end].end;
-
-        // Build selected text
-        const selectedText = selectedWords.map((w) => w.text).join("");
-
-        onSelectionChange?.({
-          startIndex: start,
-          endIndex: end,
-          startTime,
-          endTime,
-          selectedText,
-        });
-      }
+      commitSelection(start, end);
     }
     setIsSelecting(false);
-  }, [isSelecting, selectionStart, selectionEnd, words, onSelectionChange]);
+  }, [isSelecting, selectionStart, selectionEnd, commitSelection]);
+
+  const clearSelection = useCallback(() => {
+    setSelectionStart(null);
+    setSelectionEnd(null);
+    setFocusedIndex(null);
+    onSelectionChange?.(null);
+  }, [onSelectionChange]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (wordIndices.length === 0) return;
+
+      const currentWordIndexPos = focusedIndex !== null
+        ? wordIndices.indexOf(focusedIndex)
+        : -1;
+
+      switch (e.key) {
+        case "ArrowRight":
+        case "ArrowDown": {
+          e.preventDefault();
+          const nextPos = currentWordIndexPos < wordIndices.length - 1
+            ? currentWordIndexPos + 1
+            : currentWordIndexPos;
+          const nextIndex = nextPos >= 0 ? wordIndices[nextPos] : wordIndices[0];
+          setFocusedIndex(nextIndex);
+
+          if (e.shiftKey && selectionStart !== null) {
+            setSelectionEnd(nextIndex);
+            commitSelection(
+              Math.min(selectionStart, nextIndex),
+              Math.max(selectionStart, nextIndex)
+            );
+          } else if (e.shiftKey) {
+            setSelectionStart(nextIndex);
+            setSelectionEnd(nextIndex);
+          }
+          break;
+        }
+        case "ArrowLeft":
+        case "ArrowUp": {
+          e.preventDefault();
+          const prevPos = currentWordIndexPos > 0
+            ? currentWordIndexPos - 1
+            : 0;
+          const prevIndex = wordIndices[prevPos] ?? wordIndices[0];
+          setFocusedIndex(prevIndex);
+
+          if (e.shiftKey && selectionStart !== null) {
+            setSelectionEnd(prevIndex);
+            commitSelection(
+              Math.min(selectionStart, prevIndex),
+              Math.max(selectionStart, prevIndex)
+            );
+          } else if (e.shiftKey) {
+            setSelectionStart(prevIndex);
+            setSelectionEnd(prevIndex);
+          }
+          break;
+        }
+        case "Enter":
+        case " ": {
+          e.preventDefault();
+          if (focusedIndex !== null) {
+            if (selectionStart === null) {
+              setSelectionStart(focusedIndex);
+              setSelectionEnd(focusedIndex);
+              commitSelection(focusedIndex, focusedIndex);
+            }
+          }
+          break;
+        }
+        case "Escape": {
+          e.preventDefault();
+          clearSelection();
+          break;
+        }
+      }
+    },
+    [focusedIndex, wordIndices, selectionStart, commitSelection, clearSelection]
+  );
 
   useEffect(() => {
     document.addEventListener("mouseup", handleMouseUp);
@@ -93,12 +183,6 @@ export function TranscriptEditor({
   const isWordActive = (word: TranscriptionWord): boolean => {
     return currentTime >= word.start && currentTime <= word.end;
   };
-
-  const clearSelection = useCallback(() => {
-    setSelectionStart(null);
-    setSelectionEnd(null);
-    onSelectionChange?.(null);
-  }, [onSelectionChange]);
 
   if (!words || words.length === 0) {
     return (
@@ -118,7 +202,7 @@ export function TranscriptEditor({
             Transcript
           </h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Click and drag to select words to replace
+            Click and drag, or use arrow keys + Shift to select
           </p>
         </div>
 
@@ -134,12 +218,17 @@ export function TranscriptEditor({
 
       <div
         ref={containerRef}
-        className="text-lg leading-relaxed select-none"
+        tabIndex={0}
+        role="textbox"
+        aria-label="Transcript text. Use arrow keys to navigate, Shift+arrows to select, Escape to clear."
+        onKeyDown={handleKeyDown}
+        className="text-lg leading-relaxed select-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg p-2 -m-2"
         style={{ userSelect: "none" }}
       >
         {words.map((word, index) => {
           const selected = isWordSelected(index);
           const active = isWordActive(word);
+          const focused = focusedIndex === index;
 
           // Don't render spacing items separately, just add space logic
           if (word.type === "spacing") {
@@ -156,6 +245,7 @@ export function TranscriptEditor({
                 ${selected ? "bg-blue-200 dark:bg-blue-800 rounded" : ""}
                 ${active ? "text-blue-600 dark:text-blue-400 font-medium" : "text-gray-800 dark:text-gray-200"}
                 ${word.type === "word" && !selected ? "hover:bg-gray-100 dark:hover:bg-gray-700 rounded" : ""}
+                ${focused && word.type === "word" ? "ring-2 ring-blue-400 ring-offset-1" : ""}
                 transition-colors duration-100
               `}
             >

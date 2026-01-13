@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { elevenlabs } from "@/lib/elevenlabs";
 import { TranscriptionResult, TranscriptionWord } from "@/lib/types";
 
+const MAX_FILE_SIZE_MB = 50;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -18,6 +21,14 @@ export async function POST(request: NextRequest) {
     if (!file.type.includes("audio/") && !file.name.endsWith(".mp3")) {
       return NextResponse.json(
         { error: "Invalid file type. Please upload an MP3 file." },
+        { status: 400 }
+      );
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return NextResponse.json(
+        { error: `File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.` },
         { status: 400 }
       );
     }

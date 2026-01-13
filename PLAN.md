@@ -24,7 +24,7 @@ Build a web app that allows users to fix or replace specific words/phrases in au
 ## Technical Approach
 
 ### API Integration (Eleven Labs)
-**API Key**: `sk_b022d98ec9dbeda413b344d857b75ad66e1e1625c295c78f`
+**API Key**: Set via `ELEVENLABS_API_KEY` environment variable (see `.env.example`)
 
 #### Three Core APIs:
 1. **Speech-to-Text** (`POST /v1/speech-to-text`)
