@@ -148,6 +148,12 @@ Build a web app that allows users to fix or replace specific words/phrases in au
 - `wavesurfer.js` - Waveform visualization
 - `fluent-ffmpeg` - Audio processing (server-side)
 
+### Design System
+- **Fonts**: DM Sans (body), Fraunces (display)
+- **Theme**: "Studio Warm" with amber accents
+- **Light/Dark Mode**: CSS `prefers-color-scheme` with custom properties
+- **Styling**: Tailwind CSS v4.1 with semantic color utilities (`text-themed-primary`, etc.)
+
 ### File Structure
 ```
 /src
@@ -202,6 +208,16 @@ npm install
 npm run dev
 ```
 Then open http://localhost:3000 in your browser.
+
+## Deployment (Railway)
+
+Railway uses Railpack for builds. FFmpeg is required for audio processing.
+
+**Environment Variables:**
+- `ELEVENLABS_API_KEY` - Your ElevenLabs API key
+- `RAILPACK_DEPLOY_APT_PACKAGES=ffmpeg` - Installs FFmpeg via apt
+
+The `audio-processor.ts` uses `which` to find ffmpeg/ffprobe in PATH, which works with the apt-installed binaries.
 
 ## Known Issues & Fixes
 

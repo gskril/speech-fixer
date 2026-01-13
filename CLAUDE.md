@@ -10,6 +10,14 @@ npm run dev
 # Requires ELEVENLABS_API_KEY in .env.local
 ```
 
+## Deployment (Railway)
+
+Railway uses Railpack for builds. Set these environment variables:
+- `ELEVENLABS_API_KEY` - Your ElevenLabs API key
+- `RAILPACK_DEPLOY_APT_PACKAGES=ffmpeg` - Installs FFmpeg via apt
+
+The `audio-processor.ts` uses `execFileSync("which", ["ffmpeg"])` to find system binaries.
+
 ## Architecture Patterns
 
 ### API Layer (React Query)
@@ -108,3 +116,36 @@ Voice clone is created once per upload and cached. The `voiceId` is stored in co
 3. Type replacement text and click "Replace Audio"
 4. Use "Play Selection" to verify the splice
 5. Download to verify the final file
+
+## Theming
+
+### Design System
+- **Fonts**: DM Sans (body), Fraunces (display) - loaded via `next/font/google`
+- **Theme**: "Studio Warm" aesthetic with warm amber accents
+- **Colors**: Defined as CSS custom properties in `globals.css`
+
+### Light/Dark Mode
+Uses CSS `prefers-color-scheme` media query. Theme variables are defined in `:root` (light) and overridden in `@media (prefers-color-scheme: dark)`.
+
+**Semantic color utilities** (defined in `globals.css`):
+- `text-themed-primary` - Main text color
+- `text-themed-secondary` - Secondary text
+- `text-themed-tertiary` - Tertiary text
+- `text-themed-muted` - Muted/disabled text
+- `text-themed-accent` - Accent color (amber)
+- `bg-themed-primary/secondary/tertiary` - Background colors
+- `border-themed` - Border color
+
+**WaveSurfer**: Waveform colors adapt dynamically using `window.matchMedia("(prefers-color-scheme: dark)")` listener in `Waveform.tsx`.
+
+## Voice Quality Settings
+
+The `/api/synthesize` route uses these ElevenLabs settings for best quality:
+- **Model**: `eleven_multilingual_v2` (higher quality than turbo)
+- **Voice Settings**:
+  - `stability`: 0.5
+  - `similarityBoost`: 0.9
+  - `style`: 0.3
+  - `useSpeakerBoost`: true
+
+For best voice cloning results, use 1-2 minutes of clear speech without background noise.
