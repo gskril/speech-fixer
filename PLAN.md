@@ -144,32 +144,35 @@ Build a web app that allows users to fix or replace specific words/phrases in au
 - `next` - Framework
 - `react` - UI
 - `@elevenlabs/elevenlabs-js` - API client
+- `@tanstack/react-query` - Server state management
 - `wavesurfer.js` - Waveform visualization
-- `fluent-ffmpeg` - Audio processing
+- `fluent-ffmpeg` - Audio processing (server-side)
 
 ### File Structure
 ```
-/speech-fixer
-  /src
-    /app
-      page.tsx - Main upload/editor interface
-      layout.tsx - App layout
-      globals.css - Global styles
-      /api
-        /transcribe/route.ts
-        /clone-voice/route.ts
-        /synthesize/route.ts
-        /splice/route.ts
-    /components
-      AudioUpload.tsx
-      Waveform.tsx
-      TranscriptEditor.tsx
-      ReplacementInput.tsx
-      ProcessingStatus.tsx
-    /lib
-      elevenlabs.ts - API client setup
-      audio-processor.ts - Audio manipulation utils
-      types.ts - TypeScript type definitions
+/src
+  /app
+    page.tsx - Main upload/editor interface
+    layout.tsx - App layout
+    globals.css - Global styles
+    /api
+      /transcribe/route.ts
+      /clone-voice/route.ts
+      /synthesize/route.ts
+      /splice/route.ts
+  /components
+    AudioUpload.tsx
+    Waveform.tsx
+    TranscriptEditor.tsx
+    ReplacementInput.tsx
+    ProcessingStatus.tsx
+    Providers.tsx - React Query provider
+  /hooks
+    useApi.ts - React Query mutations for API calls
+  /lib
+    elevenlabs.ts - API client setup
+    audio-processor.ts - FFmpeg audio splicing
+    types.ts - TypeScript type definitions
 ```
 
 ## Confirmed Decisions
@@ -195,8 +198,16 @@ Build a web app that allows users to fix or replace specific words/phrases in au
 
 ## How to Run
 ```bash
-cd speech-fixer
 npm install
 npm run dev
 ```
 Then open http://localhost:3000 in your browser.
+
+## Known Issues & Fixes
+
+### Audio Splicing Format Mismatch (Fixed)
+**Problem**: After replacing audio, playback would stop or the downloaded file would have distortion at the splice point.
+
+**Cause**: FFmpeg's concat demuxer with `-c copy` (codec copy) requires all audio segments to have identical parameters. The ElevenLabs synthesized audio (44100Hz, 128kbps) often differed from the original audio encoding.
+
+**Solution**: All audio segments (before, replacement, after) are now normalized to consistent MP3 parameters (44100Hz, 128kbps, stereo) before concatenation in `src/lib/audio-processor.ts`.
