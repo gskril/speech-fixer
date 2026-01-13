@@ -5,6 +5,13 @@ import { useCallback, useState } from "react";
 const MAX_FILE_SIZE_MB = 50;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
+// ElevenLabs supported formats
+// Audio: AAC, AIFF, OGG, MP3, OPUS, WAV, FLAC, M4A
+// Video: MP4, AVI, MKV, MOV, WMV, FLV, WEBM, MPEG, 3GPP
+const SUPPORTED_AUDIO_EXTENSIONS = [".aac", ".aiff", ".ogg", ".mp3", ".opus", ".wav", ".flac", ".m4a"];
+const SUPPORTED_VIDEO_EXTENSIONS = [".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm", ".mpeg", ".3gpp", ".3gp"];
+const SUPPORTED_EXTENSIONS = [...SUPPORTED_AUDIO_EXTENSIONS, ...SUPPORTED_VIDEO_EXTENSIONS];
+
 interface AudioUploadProps {
   onFileSelect: (file: File) => void;
   isLoading?: boolean;
@@ -17,8 +24,12 @@ export function AudioUpload({
   const [isDragging, setIsDragging] = useState(false);
 
   const validateFile = useCallback((file: File): boolean => {
-    if (!file.type.includes("audio/") && !file.name.endsWith(".mp3")) {
-      alert("Please upload an MP3 audio file.");
+    const fileName = file.name.toLowerCase();
+    const hasValidExtension = SUPPORTED_EXTENSIONS.some(ext => fileName.endsWith(ext));
+    const hasValidMimeType = file.type.includes("audio/") || file.type.includes("video/");
+
+    if (!hasValidExtension && !hasValidMimeType) {
+      alert("Please upload an audio or video file (MP3, WAV, MP4, etc.)");
       return false;
     }
     if (file.size > MAX_FILE_SIZE_BYTES) {
@@ -80,7 +91,7 @@ export function AudioUpload({
     >
       <input
         type="file"
-        accept="audio/mp3,audio/mpeg,.mp3"
+        accept="audio/*,video/*,.mp3,.wav,.m4a,.aac,.ogg,.flac,.aiff,.opus,.mp4,.mov,.avi,.mkv,.webm,.wmv,.flv,.mpeg,.3gpp,.3gp"
         onChange={handleFileInput}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         disabled={isLoading}
@@ -125,7 +136,7 @@ export function AudioUpload({
         {/* Text content */}
         <div className="space-y-2 mb-6">
           <p className="text-lg font-medium text-themed-secondary">
-            {isDragging ? "Drop it here" : "Drop your audio file"}
+            {isDragging ? "Drop it here" : "Drop your audio or video file"}
           </p>
           <p className="text-sm text-themed-muted">
             or{" "}
@@ -150,7 +161,7 @@ export function AudioUpload({
               d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
             />
           </svg>
-          MP3 up to {MAX_FILE_SIZE_MB}MB
+          MP3, WAV, MP4, etc. up to {MAX_FILE_SIZE_MB}MB
         </div>
 
         {/* Quality tips */}

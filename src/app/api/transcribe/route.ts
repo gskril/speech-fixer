@@ -17,10 +17,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type
-    if (!file.type.includes("audio/") && !file.name.endsWith(".mp3")) {
+    // Validate file type - ElevenLabs accepts audio and video files
+    const isAudioOrVideo = file.type.includes("audio/") || file.type.includes("video/");
+    const fileName = file.name.toLowerCase();
+    const supportedExtensions = [
+      ".aac", ".aiff", ".ogg", ".mp3", ".opus", ".wav", ".flac", ".m4a",
+      ".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm", ".mpeg", ".3gpp", ".3gp"
+    ];
+    const hasValidExtension = supportedExtensions.some(ext => fileName.endsWith(ext));
+
+    if (!isAudioOrVideo && !hasValidExtension) {
       return NextResponse.json(
-        { error: "Invalid file type. Please upload an MP3 file." },
+        { error: "Invalid file type. Please upload an audio or video file." },
         { status: 400 }
       );
     }
