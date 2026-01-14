@@ -1,7 +1,9 @@
 # CLAUDE.md - Codebase Patterns & Guidelines
 
 ## Project Overview
-Speech Fixer is a Next.js web app for replacing words in audio recordings using ElevenLabs AI voice synthesis. Users upload MP3 files, select words from the transcript, and replace them with AI-generated speech that matches the original speaker's voice.
+Speech Fixer is a Next.js web app with two modes:
+1. **Fix Mode**: Replace words in audio recordings using AI voice cloning. Upload audio, select words from the transcript, and replace them with AI-generated speech.
+2. **Generate Mode**: Create new audio from scratch. Record a voice sample, write a script, and generate audio in that voice.
 
 ## Quick Start
 ```bash
@@ -24,9 +26,11 @@ The `audio-processor.ts` uses `execFileSync("which", ["ffmpeg"])` to find system
 All API calls use React Query mutations defined in `src/hooks/useApi.ts`:
 - `useTranscribe` - Transcribe audio to text with timestamps
 - `useCloneVoice` - Create voice clone from audio
+- `useDeleteVoice` - Delete a cloned voice from ElevenLabs
 - `useSynthesize` - Generate TTS audio
 - `useSplice` - Splice replacement audio into original
-- `useReplaceAudio` - Orchestrates synthesize + splice
+- `useReplaceAudio` - Orchestrates synthesize + splice (Fix mode)
+- `useGenerateAudio` - Orchestrates clone + synthesize (Generate mode)
 
 Usage pattern:
 ```typescript
@@ -44,15 +48,24 @@ Audio splicing uses FFmpeg via `fluent-ffmpeg` in `src/lib/audio-processor.ts`.
 - Channels: 2 (stereo)
 
 ### Component Structure
-- `page.tsx` - Main orchestrator, manages state for audio/transcript/selection
+- `page.tsx` - Main orchestrator, manages state and mode switching
+- `ModeToggle.tsx` - Toggle between Fix and Generate modes
+- `ProcessingStatus.tsx` - Loading overlay with step progress (indeterminate animation)
+
+**Fix Mode Components:**
 - `AudioUpload.tsx` - Drag-and-drop file upload
 - `Waveform.tsx` - WaveSurfer.js visualization with region selection
 - `TranscriptEditor.tsx` - Word-level text selection (click-drag or shift+arrows)
 - `ReplacementInput.tsx` - Text input for replacement + replace button
-- `ProcessingStatus.tsx` - Loading overlay during API calls
+
+**Generate Mode Components:**
+- `GenerateMode.tsx` - Orchestrates voice recording and script synthesis
+- `VoiceRecorder.tsx` - Browser-based audio recording with sample script
 
 ### State Flow
-1. User uploads MP3 → triggers transcription + voice cloning in parallel
+
+**Fix Mode:**
+1. User uploads MP3 → triggers transcription + voice cloning sequentially
 2. Transcript displays with word spans, waveform renders
 3. User selects words → `WordSelection` object with start/end times + indices
 4. User types replacement → calls `handleReplace`:
@@ -60,6 +73,13 @@ Audio splicing uses FFmpeg via `fluent-ffmpeg` in `src/lib/audio-processor.ts`.
    - Splice into original using FFmpeg
    - Update transcript timestamps (estimated based on text length ratio)
    - Reload waveform with new audio
+
+**Generate Mode:**
+1. User records voice sample using browser MediaRecorder
+2. User previews and confirms recording
+3. User types script text
+4. On generate → clone voice from sample, then synthesize script
+5. Audio plays back and can be downloaded
 
 ### TypeScript Types (`src/lib/types.ts`)
 ```typescript
@@ -111,11 +131,21 @@ Voice clone is created once per upload and cached. The `voiceId` is stored in co
 - Lib utilities: kebab-case (`audio-processor.ts`)
 
 ## Testing Locally
+
+**Fix Mode:**
 1. Use an MP3 file with clear speech (30+ seconds recommended for voice cloning)
 2. Select words in transcript by clicking and dragging
 3. Type replacement text and click "Replace Audio"
 4. Use "Play Selection" to verify the splice
 5. Download to verify the final file
+
+**Generate Mode:**
+1. Click "Generate Voice" tab
+2. Record 30-60 seconds reading the sample script (or improvise)
+3. Preview recording and confirm
+4. Type script text to generate
+5. Click "Generate Audio" and wait for processing
+6. Play back and download the result
 
 ## Theming
 

@@ -1,16 +1,24 @@
 # Speech Fixer
 
-A web app that allows users to fix or replace specific words/phrases in audio recordings using AI voice synthesis powered by Eleven Labs. Inspired by Descript's text-based editing interface.
+A web app for AI-powered voice editing using Eleven Labs. Two modes:
+- **Fix Mode**: Replace specific words in audio recordings with AI-generated speech
+- **Generate Mode**: Create new audio from scratch by recording a voice sample and typing a script
 
 ## Features
 
-- **Audio Upload**: Drag-and-drop or click to upload MP3 files
+### Fix Mode
+- **Audio Upload**: Drag-and-drop or click to upload audio/video files
 - **Waveform Visualization**: Interactive waveform display using WaveSurfer.js
-- **Automatic Transcription**: Word-level transcription with timestamps using Eleven Labs Speech-to-Text
+- **Automatic Transcription**: Word-level transcription with timestamps
 - **Text-Based Editing**: Select words directly from the transcript
-- **AI Voice Cloning**: Instantly clone the speaker's voice from the uploaded audio
-- **In-Place Replacement**: Generate new audio that matches the original speaker
+- **AI Voice Cloning**: Instantly clone the speaker's voice
 - **Audio Splicing**: Seamlessly replace selected segments using FFmpeg
+
+### Generate Mode
+- **Voice Recording**: Record a voice sample directly in the browser
+- **Sample Script**: Guided script to capture varied speech patterns
+- **Script Input**: Type any text to generate as audio
+- **Voice Synthesis**: Generate audio in the cloned voice
 
 ## Getting Started
 
@@ -47,13 +55,21 @@ npm run dev
 
 ## How It Works
 
-1. **Upload**: Drop an MP3 file to upload
+### Fix Mode
+1. **Upload**: Drop an audio/video file to upload
 2. **Transcribe**: The audio is automatically transcribed with word-level timestamps
 3. **Clone Voice**: A voice clone is created from the uploaded audio
 4. **Select**: Click and drag to select words in the transcript or waveform
 5. **Replace**: Type the new text you want to replace the selection with
 6. **Process**: AI generates new audio with the cloned voice, and it's spliced into the original
 7. **Download**: Download the edited audio file
+
+### Generate Mode
+1. **Record**: Record a 30-60 second voice sample using the built-in recorder
+2. **Preview**: Listen to your recording and confirm it sounds good
+3. **Write**: Type or paste the script you want to generate
+4. **Generate**: AI clones your voice and synthesizes the script
+5. **Download**: Download the generated audio file
 
 ## Tech Stack
 
@@ -87,11 +103,16 @@ src/
 │   ├── layout.tsx
 │   └── page.tsx
 ├── components/
-│   ├── AudioUpload.tsx
-│   ├── ProcessingStatus.tsx
-│   ├── ReplacementInput.tsx
-│   ├── TranscriptEditor.tsx
-│   └── Waveform.tsx
+│   ├── AudioUpload.tsx        # File upload (Fix mode)
+│   ├── GenerateMode.tsx       # Generate mode orchestrator
+│   ├── ModeToggle.tsx         # Fix/Generate mode switcher
+│   ├── ProcessingStatus.tsx   # Loading overlay with progress
+│   ├── ReplacementInput.tsx   # Text replacement input (Fix mode)
+│   ├── TranscriptEditor.tsx   # Word selection (Fix mode)
+│   ├── VoiceRecorder.tsx      # Audio recording (Generate mode)
+│   └── Waveform.tsx           # Audio visualization (Fix mode)
+├── hooks/
+│   └── useApi.ts              # React Query mutations
 └── lib/
     ├── audio-processor.ts
     ├── elevenlabs.ts
