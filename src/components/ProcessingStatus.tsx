@@ -135,12 +135,18 @@ export function ProcessingStatus({ steps, isVisible }: ProcessingStatusProps) {
 
         {/* Progress bar */}
         <div className="mt-6 h-1 bg-themed-tertiary rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-500 ease-out"
-            style={{
-              width: `${(steps.filter((s) => s.status === "completed").length / steps.length) * 100}%`,
-            }}
-          />
+          {steps.some((s) => s.status === "in_progress") ? (
+            <div className="h-full w-full bg-themed-tertiary relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400 to-transparent animate-indeterminate" />
+            </div>
+          ) : (
+            <div
+              className="h-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-500 ease-out"
+              style={{
+                width: `${(steps.filter((s) => s.status === "completed").length / steps.length) * 100}%`,
+              }}
+            />
+          )}
         </div>
       </div>
     </div>

@@ -254,6 +254,19 @@ body::before {
   }
 }
 
+@keyframes indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-indeterminate {
+  animation: indeterminate 1.5s ease-in-out infinite;
+}
+
 .animate-pulse-ring {
   animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -358,6 +371,7 @@ body::before {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
   font-weight: 500;
   border-radius: var(--radius-lg);
   transition: all 0.2s ease;
@@ -372,7 +386,6 @@ body::before {
 .btn-primary {
   background: linear-gradient(135deg, var(--color-amber-500) 0%, var(--color-amber-600) 100%);
   color: var(--color-slate-950);
-  padding: 0.75rem 1.5rem;
 }
 
 .btn-primary:hover:not(:disabled) {

@@ -6,6 +6,8 @@ import { Waveform } from "@/components/Waveform";
 import { TranscriptEditor } from "@/components/TranscriptEditor";
 import { ReplacementInput } from "@/components/ReplacementInput";
 import { ProcessingStatus } from "@/components/ProcessingStatus";
+import { ModeToggle, AppMode } from "@/components/ModeToggle";
+import { GenerateMode } from "@/components/GenerateMode";
 import { TranscriptionResult, WordSelection } from "@/lib/types";
 import {
   useTranscribe,
@@ -22,6 +24,7 @@ interface ProcessingStep {
 }
 
 export default function Home() {
+  const [mode, setMode] = useState<AppMode>("fix");
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [transcription, setTranscription] =
@@ -432,55 +435,67 @@ export default function Home() {
               Speech Fixer
             </h1>
           </div>
-          <p className="text-themed-tertiary text-base sm:text-lg max-w-xl text-balance leading-relaxed">
-            Fix words in your recordings with AI. Upload audio, select what to
-            change, and let voice cloning do the rest.
+          <p className="text-themed-tertiary text-base sm:text-lg max-w-xl text-balance leading-relaxed mb-6">
+            {mode === "fix"
+              ? "Fix words in your recordings with AI. Upload audio, select what to change, and let voice cloning do the rest."
+              : "Generate new audio with your voice. Record a sample, type your script, and let AI create the audio."}
           </p>
+          <ModeToggle
+            mode={mode}
+            onModeChange={setMode}
+            disabled={isProcessing || !!audioUrl}
+          />
         </header>
 
-        {/* Error Display */}
-        {error && (
-          <div className="mb-6 animate-fade-in">
-            <div className="card p-4 border-red-500/30 bg-red-500/5">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0">
-                  <svg
-                    className="w-4 h-4 text-red-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-red-400">
-                    Something went wrong
-                  </p>
-                  <p className="text-sm text-red-400/70 mt-0.5">{error}</p>
+        {/* Generate Mode */}
+        {mode === "generate" && <GenerateMode />}
+
+        {/* Fix Mode */}
+        {mode === "fix" && (
+          <>
+            {/* Error Display */}
+            {error && (
+              <div className="mb-6 animate-fade-in">
+                <div className="card p-4 border-red-500/30 bg-red-500/5">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                      <svg
+                        className="w-4 h-4 text-red-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-red-400">
+                        Something went wrong
+                      </p>
+                      <p className="text-sm text-red-400/70 mt-0.5">{error}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* Upload Section */}
-        {!audioUrl && (
-          <div className="animate-fade-in">
-            <AudioUpload
-              onFileSelect={handleFileSelect}
-              isLoading={isProcessing}
-            />
-          </div>
-        )}
+            {/* Upload Section */}
+            {!audioUrl && (
+              <div className="animate-fade-in">
+                <AudioUpload
+                  onFileSelect={handleFileSelect}
+                  isLoading={isProcessing}
+                />
+              </div>
+            )}
 
-        {/* Editor Section */}
-        {audioUrl && (
+            {/* Editor Section */}
+            {audioUrl && (
           <div className="space-y-5 animate-fade-in">
             {/* Controls Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -580,6 +595,8 @@ export default function Home() {
               </div>
             )}
           </div>
+            )}
+          </>
         )}
 
         {/* Footer */}
