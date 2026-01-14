@@ -212,3 +212,39 @@ export function useReplaceAudio() {
     spliceStatus: splice.status,
   };
 }
+
+// Combined hook for generating full audio from voice sample (clone + synthesize)
+export function useGenerateAudio() {
+  const cloneVoice = useCloneVoice();
+  const synthesize = useSynthesize();
+
+  const generateAudio = useMutation({
+    mutationFn: async ({
+      voiceSample,
+      scriptText,
+    }: {
+      voiceSample: File;
+      scriptText: string;
+    }) => {
+      // First clone the voice from the sample
+      const cloneResult = await cloneVoice.mutateAsync(voiceSample);
+
+      // Then synthesize the script with the cloned voice
+      const synthResult = await synthesize.mutateAsync({
+        text: scriptText,
+        voiceId: cloneResult.voice_id,
+      });
+
+      return {
+        audio: synthResult.audio,
+        voiceId: cloneResult.voice_id,
+      };
+    },
+  });
+
+  return {
+    generateAudio,
+    cloneVoiceStatus: cloneVoice.status,
+    synthesizeStatus: synthesize.status,
+  };
+}
