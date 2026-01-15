@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { ProcessingStatus } from "./ProcessingStatus";
+import { AudioPlayer } from "./ai-sdk";
 import { useGenerateAudio, useDeleteVoice } from "@/hooks/useApi";
 
 interface ProcessingStep {
@@ -19,9 +20,7 @@ export function GenerateMode() {
     null
   );
   const [voiceId, setVoiceId] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const voiceIdRef = useRef<string | null>(null);
 
   const { generateAudio, cloneVoiceStatus, synthesizeStatus } =
@@ -138,18 +137,6 @@ export function GenerateMode() {
     }
   }, [voiceSample, scriptText, generateAudio, generatedAudioUrl]);
 
-  const handlePlayPause = useCallback(() => {
-    if (!audioRef.current || !generatedAudioUrl) return;
-
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioRef.current.play();
-      setIsPlaying(true);
-    }
-  }, [isPlaying, generatedAudioUrl]);
-
   const handleDownload = useCallback(() => {
     if (!generatedAudioUrl) return;
 
@@ -180,7 +167,6 @@ export function GenerateMode() {
     setScriptText("");
     setGeneratedAudioUrl(null);
     setVoiceId(null);
-    setIsPlaying(false);
   }, [voiceId, generatedAudioUrl, deleteVoiceMutation, generateAudio]);
 
   return (
@@ -268,52 +254,19 @@ export function GenerateMode() {
             </div>
           </div>
 
-          {/* Audio Player Card */}
-          <div className="card p-6 animate-slide-up">
-            <div className="flex flex-col items-center gap-4">
-              {/* Play Button */}
-              <button
-                onClick={handlePlayPause}
-                className="w-16 h-16 rounded-full bg-amber-500 hover:bg-amber-400 flex items-center justify-center transition-all duration-200 glow-amber"
-              >
-                {isPlaying ? (
-                  <svg
-                    className="w-6 h-6 text-slate-950"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <rect x="6" y="5" width="4" height="14" rx="1" />
-                    <rect x="14" y="5" width="4" height="14" rx="1" />
-                  </svg>
-                ) : (
-                  <svg
-                    className="w-6 h-6 text-slate-950 ml-1"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                )}
-              </button>
+          {/* Audio Player with AI SDK Component */}
+          <div className="animate-slide-up">
+            <AudioPlayer
+              src={generatedAudioUrl}
+              autoPlay={false}
+            />
 
-              <p className="text-sm text-themed-tertiary">
-                {isPlaying ? "Playing..." : "Click to play"}
+            {/* Script Preview */}
+            <div className="card p-4 mt-4">
+              <p className="text-xs text-themed-muted mb-2">Generated from script:</p>
+              <p className="text-sm text-themed-secondary line-clamp-3">
+                {scriptText}
               </p>
-
-              {/* Script Preview */}
-              <div className="w-full mt-4 p-4 rounded-lg bg-themed-tertiary border border-themed">
-                <p className="text-xs text-themed-muted mb-1">Generated from:</p>
-                <p className="text-sm text-themed-secondary line-clamp-3">
-                  {scriptText}
-                </p>
-              </div>
-
-              {/* Hidden audio element */}
-              <audio
-                ref={audioRef}
-                src={generatedAudioUrl}
-                onEnded={() => setIsPlaying(false)}
-              />
             </div>
           </div>
 

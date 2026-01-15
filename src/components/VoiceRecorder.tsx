@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { MicSelector } from "./ai-sdk";
 
 // Script designed to capture varied speech patterns in ~45-60 seconds
 const VOICE_SAMPLE_SCRIPT = `Hello! Welcome to my voice sample recording. I'm going to read a short passage to help create my voice clone.
@@ -26,6 +27,7 @@ export function VoiceRecorder({
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [selectedMicId, setSelectedMicId] = useState<string>("");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -51,7 +53,10 @@ export function VoiceRecorder({
   const startRecording = useCallback(async () => {
     try {
       setPermissionError(null);
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const constraints: MediaStreamConstraints = {
+        audio: selectedMicId ? { deviceId: { exact: selectedMicId } } : true,
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
 
       const mediaRecorder = new MediaRecorder(stream, {
@@ -114,7 +119,7 @@ export function VoiceRecorder({
         }
       }
     }
-  }, [audioUrl]);
+  }, [audioUrl, selectedMicId]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
@@ -198,6 +203,16 @@ export function VoiceRecorder({
             Record your voice
           </h3>
         </div>
+
+        {/* Microphone Selector */}
+        {!audioUrl && !isRecording && (
+          <div className="mb-4">
+            <MicSelector
+              onDeviceChange={setSelectedMicId}
+              selectedDeviceId={selectedMicId}
+            />
+          </div>
+        )}
 
         {/* Permission Error */}
         {permissionError && (
