@@ -1,9 +1,22 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { ProcessingStatus } from "./ProcessingStatus";
 import { useGenerateAudio, useDeleteVoice } from "@/hooks/useApi";
+import {
+  AudioPlayer,
+  AudioPlayerElement,
+  AudioPlayerControlBar,
+  AudioPlayerPlayButton,
+  AudioPlayerSeekBackwardButton,
+  AudioPlayerSeekForwardButton,
+  AudioPlayerTimeDisplay,
+  AudioPlayerTimeRange,
+  AudioPlayerDurationDisplay,
+  AudioPlayerMuteButton,
+  AudioPlayerVolumeRange,
+} from "@/components/ai-elements/audio-player";
 
 interface ProcessingStep {
   id: string;
@@ -19,10 +32,8 @@ export function GenerateMode() {
     null
   );
   const [voiceId, setVoiceId] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const voiceIdRef = useRef<string | null>(null);
+  const voiceIdRef = { current: voiceId };
 
   const { generateAudio, cloneVoiceStatus, synthesizeStatus } =
     useGenerateAudio();
@@ -138,18 +149,6 @@ export function GenerateMode() {
     }
   }, [voiceSample, scriptText, generateAudio, generatedAudioUrl]);
 
-  const handlePlayPause = useCallback(() => {
-    if (!audioRef.current || !generatedAudioUrl) return;
-
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioRef.current.play();
-      setIsPlaying(true);
-    }
-  }, [isPlaying, generatedAudioUrl]);
-
   const handleDownload = useCallback(() => {
     if (!generatedAudioUrl) return;
 
@@ -180,7 +179,6 @@ export function GenerateMode() {
     setScriptText("");
     setGeneratedAudioUrl(null);
     setVoiceId(null);
-    setIsPlaying(false);
   }, [voiceId, generatedAudioUrl, deleteVoiceMutation, generateAudio]);
 
   return (
@@ -270,50 +268,29 @@ export function GenerateMode() {
 
           {/* Audio Player Card */}
           <div className="card p-6 animate-slide-up">
-            <div className="flex flex-col items-center gap-4">
-              {/* Play Button */}
-              <button
-                onClick={handlePlayPause}
-                className="w-16 h-16 rounded-full bg-amber-500 hover:bg-amber-400 flex items-center justify-center transition-all duration-200 glow-amber"
-              >
-                {isPlaying ? (
-                  <svg
-                    className="w-6 h-6 text-slate-950"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <rect x="6" y="5" width="4" height="14" rx="1" />
-                    <rect x="14" y="5" width="4" height="14" rx="1" />
-                  </svg>
-                ) : (
-                  <svg
-                    className="w-6 h-6 text-slate-950 ml-1"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                )}
-              </button>
-
-              <p className="text-sm text-themed-tertiary">
-                {isPlaying ? "Playing..." : "Click to play"}
-              </p>
+            <div className="flex flex-col gap-4">
+              {/* AI SDK Audio Player */}
+              <AudioPlayer className="w-full">
+                <AudioPlayerElement src={generatedAudioUrl} />
+                <AudioPlayerControlBar>
+                  <AudioPlayerSeekBackwardButton seekOffset={10} />
+                  <AudioPlayerPlayButton />
+                  <AudioPlayerSeekForwardButton seekOffset={10} />
+                  <AudioPlayerTimeDisplay />
+                  <AudioPlayerTimeRange />
+                  <AudioPlayerDurationDisplay />
+                  <AudioPlayerMuteButton />
+                  <AudioPlayerVolumeRange />
+                </AudioPlayerControlBar>
+              </AudioPlayer>
 
               {/* Script Preview */}
-              <div className="w-full mt-4 p-4 rounded-lg bg-themed-tertiary border border-themed">
+              <div className="w-full p-4 rounded-lg bg-themed-tertiary border border-themed">
                 <p className="text-xs text-themed-muted mb-1">Generated from:</p>
                 <p className="text-sm text-themed-secondary line-clamp-3">
                   {scriptText}
                 </p>
               </div>
-
-              {/* Hidden audio element */}
-              <audio
-                ref={audioRef}
-                src={generatedAudioUrl}
-                onEnded={() => setIsPlaying(false)}
-              />
             </div>
           </div>
 

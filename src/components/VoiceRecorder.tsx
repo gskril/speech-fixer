@@ -1,6 +1,17 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import {
+  MicSelector,
+  MicSelectorTrigger,
+  MicSelectorValue,
+  MicSelectorContent,
+  MicSelectorInput,
+  MicSelectorList,
+  MicSelectorEmpty,
+  MicSelectorItem,
+  MicSelectorLabel,
+} from "@/components/ai-elements/mic-selector";
 
 // Script designed to capture varied speech patterns in ~45-60 seconds
 const VOICE_SAMPLE_SCRIPT = `Hello! Welcome to my voice sample recording. I'm going to read a short passage to help create my voice clone.
@@ -26,6 +37,7 @@ export function VoiceRecorder({
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | undefined>(undefined);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -51,7 +63,10 @@ export function VoiceRecorder({
   const startRecording = useCallback(async () => {
     try {
       setPermissionError(null);
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioConstraints: boolean | MediaTrackConstraints = selectedDeviceId
+        ? { deviceId: { exact: selectedDeviceId } }
+        : true;
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
       streamRef.current = stream;
 
       const mediaRecorder = new MediaRecorder(stream, {
@@ -114,7 +129,7 @@ export function VoiceRecorder({
         }
       }
     }
-  }, [audioUrl]);
+  }, [audioUrl, selectedDeviceId]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
@@ -197,6 +212,30 @@ export function VoiceRecorder({
           <h3 className="text-sm font-medium text-themed-secondary">
             Record your voice
           </h3>
+        </div>
+
+        {/* Microphone Selector */}
+        <div className="mb-4">
+          <MicSelector value={selectedDeviceId} onValueChange={setSelectedDeviceId}>
+            <MicSelectorTrigger className="w-full justify-between">
+              <MicSelectorValue />
+            </MicSelectorTrigger>
+            <MicSelectorContent>
+              <MicSelectorInput placeholder="Search microphones..." />
+              <MicSelectorList>
+                {(devices) => (
+                  <>
+                    <MicSelectorEmpty>No microphones found.</MicSelectorEmpty>
+                    {devices.map((device) => (
+                      <MicSelectorItem key={device.deviceId} value={device.deviceId}>
+                        <MicSelectorLabel device={device} />
+                      </MicSelectorItem>
+                    ))}
+                  </>
+                )}
+              </MicSelectorList>
+            </MicSelectorContent>
+          </MicSelector>
         </div>
 
         {/* Permission Error */}
