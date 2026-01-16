@@ -22,18 +22,20 @@ export function AudioUpload({
   isLoading = false,
 }: AudioUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const validateFile = useCallback((file: File): boolean => {
+    setError(null);
     const fileName = file.name.toLowerCase();
     const hasValidExtension = SUPPORTED_EXTENSIONS.some(ext => fileName.endsWith(ext));
     const hasValidMimeType = file.type.includes("audio/") || file.type.includes("video/");
 
     if (!hasValidExtension && !hasValidMimeType) {
-      alert("Please upload an audio or video file (MP3, WAV, MP4, etc.)");
+      setError("Please upload an audio or video file (MP3, WAV, MP4, etc.)");
       return false;
     }
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      alert(`File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.`);
+      setError(`File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.`);
       return false;
     }
     return true;
@@ -163,6 +165,28 @@ export function AudioUpload({
           </svg>
           MP3, WAV, MP4, etc. up to {MAX_FILE_SIZE_MB}MB
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="mt-4 p-3 rounded-lg border border-red-500/30 bg-red-500/5 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <svg
+                className="w-4 h-4 text-red-400 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+          </div>
+        )}
 
         {/* Quality tips */}
         <div className="mt-6 pt-4 border-t border-themed w-full max-w-sm">
