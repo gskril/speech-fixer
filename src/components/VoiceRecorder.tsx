@@ -2,6 +2,12 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 
+const MAX_FILE_SIZE_MB = 50;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+// ElevenLabs supported formats
+const SUPPORTED_AUDIO_EXTENSIONS = [".aac", ".aiff", ".ogg", ".mp3", ".opus", ".wav", ".flac", ".m4a", ".webm"];
+
 // Script designed to capture varied speech patterns in ~45-60 seconds
 const VOICE_SAMPLE_SCRIPT = `Hello! Welcome to my voice sample recording. I'm going to read a short passage to help create my voice clone.
 
@@ -26,12 +32,16 @@ export function VoiceRecorder({
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isFromUpload, setIsFromUpload] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -148,7 +158,55 @@ export function VoiceRecorder({
     setAudioUrl(null);
     setRecordingTime(0);
     setIsPlaying(false);
+    setIsFromUpload(false);
+    setUploadedFileName(null);
+    setUploadError(null);
   }, [audioUrl]);
+
+  const validateFile = useCallback((file: File): boolean => {
+    const fileName = file.name.toLowerCase();
+    const hasValidExtension = SUPPORTED_AUDIO_EXTENSIONS.some(ext => fileName.endsWith(ext));
+    const hasValidMimeType = file.type.includes("audio/");
+
+    if (!hasValidExtension && !hasValidMimeType) {
+      setUploadError("Please upload an audio file (MP3, WAV, M4A, etc.)");
+      return false;
+    }
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      setUploadError(`File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.`);
+      return false;
+    }
+    setUploadError(null);
+    return true;
+  }, []);
+
+  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (validateFile(file)) {
+        // Revoke old URL if exists
+        if (audioUrl) {
+          URL.revokeObjectURL(audioUrl);
+        }
+
+        setAudioBlob(file);
+        const url = URL.createObjectURL(file);
+        setAudioUrl(url);
+        setIsFromUpload(true);
+        setUploadedFileName(file.name);
+        setRecordingTime(0); // We don't know the duration yet, will be set when audio loads
+      }
+    }
+    // Reset the input so the same file can be selected again
+    if (e.target) {
+      e.target.value = '';
+    }
+  }, [audioUrl, validateFile]);
+
+  const handleUploadClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
 
   const handleUseRecording = useCallback(() => {
     if (audioBlob) {
@@ -203,6 +261,13 @@ export function VoiceRecorder({
         {permissionError && (
           <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
             <p className="text-sm text-red-400">{permissionError}</p>
+          </div>
+        )}
+
+        {/* Upload Error */}
+        {uploadError && (
+          <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+            <p className="text-sm text-red-400">{uploadError}</p>
           </div>
         )}
 
@@ -269,45 +334,84 @@ export function VoiceRecorder({
             {isRecording
               ? "Recording... Click stop when finished"
               : audioUrl
-                ? "Recording complete!"
-                : "Click to start recording"}
+                ? isFromUpload
+                  ? `File uploaded: ${uploadedFileName}`
+                  : "Recording complete!"
+                : "Record or upload a voice sample"}
           </p>
+
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac,.aiff,.opus,.webm"
+            onChange={handleFileUpload}
+            className="hidden"
+            disabled={isProcessing || isRecording}
+          />
 
           {/* Controls */}
           <div className="flex items-center gap-3">
             {!audioUrl ? (
-              <button
-                onClick={isRecording ? stopRecording : startRecording}
-                disabled={isProcessing}
-                className={`
-                  btn ${isRecording ? "bg-red-500 hover:bg-red-600 text-white" : "btn-primary"}
-                  ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}
-                `}
-              >
-                {isRecording ? (
-                  <>
+              <>
+                <button
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={isProcessing}
+                  className={`
+                    btn ${isRecording ? "bg-red-500 hover:bg-red-600 text-white" : "btn-primary"}
+                    ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}
+                  `}
+                >
+                  {isRecording ? (
+                    <>
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <rect x="6" y="6" width="12" height="12" rx="1" />
+                      </svg>
+                      Stop Recording
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle cx="12" cy="12" r="6" />
+                      </svg>
+                      Record
+                    </>
+                  )}
+                </button>
+                {!isRecording && (
+                  <button
+                    onClick={handleUploadClick}
+                    disabled={isProcessing}
+                    className={`
+                      btn btn-secondary
+                      ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}
+                    `}
+                  >
                     <svg
                       className="w-4 h-4"
-                      fill="currentColor"
+                      fill="none"
+                      stroke="currentColor"
                       viewBox="0 0 24 24"
+                      strokeWidth={2}
                     >
-                      <rect x="6" y="6" width="12" height="12" rx="1" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                      />
                     </svg>
-                    Stop Recording
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-4 h-4"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle cx="12" cy="12" r="6" />
-                    </svg>
-                    Start Recording
-                  </>
+                    Upload File
+                  </button>
                 )}
-              </button>
+              </>
             ) : (
               <>
                 <button
@@ -358,7 +462,7 @@ export function VoiceRecorder({
                       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
                   </svg>
-                  Retake
+                  {isFromUpload ? "Try Again" : "Retake"}
                 </button>
               </>
             )}
@@ -370,6 +474,12 @@ export function VoiceRecorder({
               ref={audioRef}
               src={audioUrl}
               onEnded={() => setIsPlaying(false)}
+              onLoadedMetadata={(e) => {
+                // For uploaded files, set the duration once loaded
+                if (isFromUpload && e.currentTarget.duration) {
+                  setRecordingTime(Math.floor(e.currentTarget.duration));
+                }
+              }}
             />
           )}
         </div>
@@ -430,7 +540,7 @@ export function VoiceRecorder({
       </div>
 
       {/* Use Recording Button */}
-      {audioUrl && recordingTime >= 10 && (
+      {audioUrl && (isFromUpload || recordingTime >= 10) && (
         <button
           onClick={handleUseRecording}
           disabled={isProcessing}
@@ -459,18 +569,27 @@ export function VoiceRecorder({
                   d="M13 7l5 5m0 0l-5 5m5-5H6"
                 />
               </svg>
-              Use This Recording
+              {isFromUpload ? "Use This File" : "Use This Recording"}
             </>
           )}
         </button>
       )}
 
-      {/* Warning for short recordings */}
-      {audioUrl && recordingTime < 10 && (
+      {/* Warning for short recordings (only for recorded audio, not uploads) */}
+      {audioUrl && !isFromUpload && recordingTime < 10 && (
         <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
           <p className="text-sm text-amber-400">
             Recording is too short ({formatTime(recordingTime)}). Please record
             at least 10 seconds for a quality voice clone.
+          </p>
+        </div>
+      )}
+
+      {/* Info for uploaded files */}
+      {audioUrl && isFromUpload && recordingTime > 0 && recordingTime < 10 && (
+        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+          <p className="text-sm text-amber-400">
+            This file is quite short ({formatTime(recordingTime)}). For best voice cloning results, use at least 10 seconds of audio.
           </p>
         </div>
       )}
