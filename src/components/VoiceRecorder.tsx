@@ -26,6 +26,7 @@ export function VoiceRecorder({
   onRecordingComplete,
   isProcessing = false,
 }: VoiceRecorderProps) {
+  const [inputMode, setInputMode] = useState<"choose" | "record" | "upload">("choose");
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -161,6 +162,7 @@ export function VoiceRecorder({
     setIsFromUpload(false);
     setUploadedFileName(null);
     setUploadError(null);
+    setInputMode("choose");
   }, [audioUrl]);
 
   const validateFile = useCallback((file: File): boolean => {
@@ -222,93 +224,38 @@ export function VoiceRecorder({
 
   return (
     <div className="card p-6 sm:p-8">
-      {/* Script Section */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
-            <span className="text-xs font-bold text-amber-400">1</span>
-          </div>
-          <h3 className="text-sm font-medium text-themed-secondary">
-            Read this script aloud
-          </h3>
-        </div>
-        <div className="relative p-4 rounded-xl bg-themed-tertiary border border-themed">
-          <p className="text-sm text-themed-secondary leading-relaxed whitespace-pre-line">
-            {VOICE_SAMPLE_SCRIPT}
-          </p>
-          <div className="absolute bottom-2 right-2">
-            <span className="tag text-xs">~45-60 seconds</span>
-          </div>
-        </div>
-        <p className="mt-2 text-xs text-themed-muted">
-          Read naturally at your normal pace. Avoid background noise for best
-          results.
-        </p>
-      </div>
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac,.aiff,.opus,.webm"
+        onChange={handleFileUpload}
+        className="hidden"
+        disabled={isProcessing || isRecording}
+      />
 
-      {/* Recording Section */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
-            <span className="text-xs font-bold text-amber-400">2</span>
+      {/* Choose Mode - Initial selection */}
+      {inputMode === "choose" && !audioUrl && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
+              <span className="text-xs font-bold text-amber-400">1</span>
+            </div>
+            <h3 className="text-sm font-medium text-themed-secondary">
+              Provide a voice sample
+            </h3>
           </div>
-          <h3 className="text-sm font-medium text-themed-secondary">
-            Record your voice
-          </h3>
-        </div>
 
-        {/* Permission Error */}
-        {permissionError && (
-          <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-            <p className="text-sm text-red-400">{permissionError}</p>
-          </div>
-        )}
-
-        {/* Upload Error */}
-        {uploadError && (
-          <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
-            <p className="text-sm text-red-400">{uploadError}</p>
-          </div>
-        )}
-
-        {/* Recording UI */}
-        <div className="flex flex-col items-center gap-4 p-6 rounded-xl bg-themed-tertiary border border-themed">
-          {/* Recording indicator */}
-          <div className="relative">
-            <div
-              className={`
-                w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300
-                ${isRecording ? "bg-red-500/20" : audioUrl ? "bg-green-500/20" : "bg-themed-secondary"}
-              `}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Record Option */}
+            <button
+              onClick={() => setInputMode("record")}
+              disabled={isProcessing}
+              className="flex flex-col items-center gap-3 p-6 rounded-xl bg-themed-tertiary border border-themed hover:border-amber-500/50 transition-all group"
             >
-              {isRecording ? (
-                <>
-                  <div className="absolute inset-0 rounded-full bg-red-500/20 animate-ping" />
-                  <svg
-                    className="w-8 h-8 text-red-400"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle cx="12" cy="12" r="6" />
-                  </svg>
-                </>
-              ) : audioUrl ? (
+              <div className="w-14 h-14 rounded-full bg-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/30 transition-colors">
                 <svg
-                  className="w-8 h-8 text-green-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  className="w-8 h-8 text-themed-tertiary"
+                  className="w-7 h-7 text-amber-400"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -320,135 +267,470 @@ export function VoiceRecorder({
                     d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
                   />
                 </svg>
-              )}
-            </div>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-themed-primary">Record Now</p>
+                <p className="text-xs text-themed-muted mt-1">
+                  Use your microphone to record
+                </p>
+              </div>
+            </button>
+
+            {/* Upload Option */}
+            <button
+              onClick={() => setInputMode("upload")}
+              disabled={isProcessing}
+              className="flex flex-col items-center gap-3 p-6 rounded-xl bg-themed-tertiary border border-themed hover:border-amber-500/50 transition-all group"
+            >
+              <div className="w-14 h-14 rounded-full bg-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/30 transition-colors">
+                <svg
+                  className="w-7 h-7 text-amber-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                  />
+                </svg>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-themed-primary">Upload File</p>
+                <p className="text-xs text-themed-muted mt-1">
+                  Use an existing recording
+                </p>
+              </div>
+            </button>
           </div>
 
-          {/* Timer */}
-          <div className="text-2xl font-mono text-themed-primary">
-            {formatTime(recordingTime)}
-          </div>
-
-          {/* Status text */}
-          <p className="text-sm text-themed-tertiary">
-            {isRecording
-              ? "Recording... Click stop when finished"
-              : audioUrl
-                ? isFromUpload
-                  ? `File uploaded: ${uploadedFileName}`
-                  : "Recording complete!"
-                : "Record or upload a voice sample"}
+          <p className="text-xs text-themed-muted text-center mt-4">
+            For best results, use 30-60 seconds of clear speech
           </p>
+        </div>
+      )}
 
-          {/* Hidden file input */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac,.aiff,.opus,.webm"
-            onChange={handleFileUpload}
-            className="hidden"
-            disabled={isProcessing || isRecording}
-          />
+      {/* Record Mode - Show script and recording UI */}
+      {inputMode === "record" && !audioUrl && (
+        <>
+          {/* Script Section */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
+                  <span className="text-xs font-bold text-amber-400">1</span>
+                </div>
+                <h3 className="text-sm font-medium text-themed-secondary">
+                  Read this script aloud
+                </h3>
+              </div>
+              <button
+                onClick={() => setInputMode("choose")}
+                className="text-xs text-themed-muted hover:text-themed-secondary transition-colors"
+              >
+                ← Back
+              </button>
+            </div>
+            <div className="relative p-4 rounded-xl bg-themed-tertiary border border-themed">
+              <p className="text-sm text-themed-secondary leading-relaxed whitespace-pre-line">
+                {VOICE_SAMPLE_SCRIPT}
+              </p>
+              <div className="absolute bottom-2 right-2">
+                <span className="tag text-xs">~45-60 seconds</span>
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-themed-muted">
+              Read naturally at your normal pace. Avoid background noise for best
+              results.
+            </p>
+          </div>
 
-          {/* Controls */}
-          <div className="flex items-center gap-3">
-            {!audioUrl ? (
-              <>
-                <button
-                  onClick={isRecording ? stopRecording : startRecording}
-                  disabled={isProcessing}
+          {/* Recording Section */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <span className="text-xs font-bold text-amber-400">2</span>
+              </div>
+              <h3 className="text-sm font-medium text-themed-secondary">
+                Record your voice
+              </h3>
+            </div>
+
+            {/* Permission Error */}
+            {permissionError && (
+              <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                <p className="text-sm text-red-400">{permissionError}</p>
+              </div>
+            )}
+
+            {/* Recording UI */}
+            <div className="flex flex-col items-center gap-4 p-6 rounded-xl bg-themed-tertiary border border-themed">
+              {/* Recording indicator */}
+              <div className="relative">
+                <div
                   className={`
-                    btn ${isRecording ? "bg-red-500 hover:bg-red-600 text-white" : "btn-primary"}
-                    ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}
+                    w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300
+                    ${isRecording ? "bg-red-500/20" : "bg-themed-secondary"}
                   `}
                 >
                   {isRecording ? (
                     <>
+                      <div className="absolute inset-0 rounded-full bg-red-500/20 animate-ping" />
                       <svg
-                        className="w-4 h-4"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <rect x="6" y="6" width="12" height="12" rx="1" />
-                      </svg>
-                      Stop Recording
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        className="w-4 h-4"
+                        className="w-8 h-8 text-red-400"
                         fill="currentColor"
                         viewBox="0 0 24 24"
                       >
                         <circle cx="12" cy="12" r="6" />
                       </svg>
-                      Record
                     </>
-                  )}
-                </button>
-                {!isRecording && (
-                  <button
-                    onClick={handleUploadClick}
-                    disabled={isProcessing}
-                    className={`
-                      btn btn-secondary
-                      ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}
-                    `}
-                  >
+                  ) : (
                     <svg
-                      className="w-4 h-4"
+                      className="w-8 h-8 text-themed-tertiary"
                       fill="none"
-                      stroke="currentColor"
                       viewBox="0 0 24 24"
+                      stroke="currentColor"
                       strokeWidth={2}
                     >
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                        d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
                       />
                     </svg>
-                    Upload File
-                  </button>
-                )}
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={handlePlayPause}
-                  disabled={isProcessing}
-                  className="btn btn-secondary"
-                >
-                  {isPlaying ? (
-                    <>
-                      <svg
-                        className="w-4 h-4"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <rect x="6" y="5" width="4" height="14" rx="1" />
-                        <rect x="14" y="5" width="4" height="14" rx="1" />
-                      </svg>
-                      Pause
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        className="w-4 h-4"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                      Play
-                    </>
                   )}
-                </button>
-                <button
-                  onClick={handleRetake}
-                  disabled={isProcessing}
-                  className="btn btn-secondary"
+                </div>
+              </div>
+
+              {/* Timer */}
+              <div className="text-2xl font-mono text-themed-primary">
+                {formatTime(recordingTime)}
+              </div>
+
+              {/* Status text */}
+              <p className="text-sm text-themed-tertiary">
+                {isRecording
+                  ? "Recording... Click stop when finished"
+                  : "Click record to start"}
+              </p>
+
+              {/* Controls */}
+              <button
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={isProcessing}
+                className={`
+                  btn ${isRecording ? "bg-red-500 hover:bg-red-600 text-white" : "btn-primary"}
+                  ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}
+                `}
+              >
+                {isRecording ? (
+                  <>
+                    <svg
+                      className="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <rect x="6" y="6" width="12" height="12" rx="1" />
+                    </svg>
+                    Stop Recording
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle cx="12" cy="12" r="6" />
+                    </svg>
+                    Start Recording
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Recording quality tips */}
+            {!isRecording && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="tag text-xs">
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  Quiet environment
+                </span>
+                <span className="tag text-xs">
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  Speak clearly
+                </span>
+                <span className="tag text-xs">
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  Natural pace
+                </span>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Upload Mode - Show upload UI (when file not yet selected) */}
+      {inputMode === "upload" && !audioUrl && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <span className="text-xs font-bold text-amber-400">1</span>
+              </div>
+              <h3 className="text-sm font-medium text-themed-secondary">
+                Upload a voice sample
+              </h3>
+            </div>
+            <button
+              onClick={() => setInputMode("choose")}
+              className="text-xs text-themed-muted hover:text-themed-secondary transition-colors"
+            >
+              ← Back
+            </button>
+          </div>
+
+          {/* Upload Error */}
+          {uploadError && (
+            <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+              <p className="text-sm text-red-400">{uploadError}</p>
+            </div>
+          )}
+
+          <div
+            onClick={handleUploadClick}
+            className="flex flex-col items-center gap-4 p-8 rounded-xl bg-themed-tertiary border-2 border-dashed border-themed hover:border-amber-500/50 transition-all cursor-pointer"
+          >
+            <div className="w-16 h-16 rounded-full bg-amber-500/20 flex items-center justify-center">
+              <svg
+                className="w-8 h-8 text-amber-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                />
+              </svg>
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-medium text-themed-primary">
+                Click to select a file
+              </p>
+              <p className="text-xs text-themed-muted mt-1">
+                MP3, WAV, M4A, or other audio formats
+              </p>
+            </div>
+          </div>
+
+          <p className="text-xs text-themed-muted text-center">
+            For best results, use 30-60 seconds of clear speech without background noise
+          </p>
+        </div>
+      )}
+
+      {/* Preview Mode - After recording or upload */}
+      {audioUrl && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
+              <svg
+                className="w-4 h-4 text-green-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <h3 className="text-sm font-medium text-themed-secondary">
+              {isFromUpload ? "File uploaded" : "Recording complete"}
+            </h3>
+          </div>
+
+          {/* Audio Preview */}
+          <div className="flex flex-col items-center gap-4 p-6 rounded-xl bg-themed-tertiary border border-themed">
+            <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center">
+              <svg
+                className="w-8 h-8 text-green-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+
+            {/* Duration / Filename */}
+            <div className="text-center">
+              {isFromUpload ? (
+                <>
+                  <p className="text-sm font-medium text-themed-primary">{uploadedFileName}</p>
+                  {recordingTime > 0 && (
+                    <p className="text-xs text-themed-muted mt-1">Duration: {formatTime(recordingTime)}</p>
+                  )}
+                </>
+              ) : (
+                <p className="text-2xl font-mono text-themed-primary">
+                  {formatTime(recordingTime)}
+                </p>
+              )}
+            </div>
+
+            {/* Playback controls */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handlePlayPause}
+                disabled={isProcessing}
+                className="btn btn-secondary"
+              >
+                {isPlaying ? (
+                  <>
+                    <svg
+                      className="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <rect x="6" y="5" width="4" height="14" rx="1" />
+                      <rect x="14" y="5" width="4" height="14" rx="1" />
+                    </svg>
+                    Pause
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                    Play
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleRetake}
+                disabled={isProcessing}
+                className="btn btn-secondary"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
                 >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                {isFromUpload ? "Choose Different" : "Retake"}
+              </button>
+            </div>
+
+            {/* Hidden audio element */}
+            <audio
+              ref={audioRef}
+              src={audioUrl}
+              onEnded={() => setIsPlaying(false)}
+              onLoadedMetadata={(e) => {
+                if (isFromUpload && e.currentTarget.duration) {
+                  setRecordingTime(Math.floor(e.currentTarget.duration));
+                }
+              }}
+            />
+          </div>
+
+          {/* Warning for short recordings */}
+          {!isFromUpload && recordingTime < 10 && (
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <p className="text-sm text-amber-400">
+                Recording is too short ({formatTime(recordingTime)}). Please record
+                at least 10 seconds for a quality voice clone.
+              </p>
+            </div>
+          )}
+
+          {/* Info for short uploaded files */}
+          {isFromUpload && recordingTime > 0 && recordingTime < 10 && (
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <p className="text-sm text-amber-400">
+                This file is quite short ({formatTime(recordingTime)}). For best voice cloning results, use at least 10 seconds of audio.
+              </p>
+            </div>
+          )}
+
+          {/* Use Recording Button */}
+          {(isFromUpload || recordingTime >= 10) && (
+            <button
+              onClick={handleUseRecording}
+              disabled={isProcessing}
+              className={`
+                w-full btn btn-primary py-3
+                ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}
+              `}
+            >
+              {isProcessing ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
                   <svg
                     className="w-4 h-4"
                     fill="none"
@@ -459,138 +741,14 @@ export function VoiceRecorder({
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
                     />
                   </svg>
-                  {isFromUpload ? "Try Again" : "Retake"}
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Hidden audio element for playback */}
-          {audioUrl && (
-            <audio
-              ref={audioRef}
-              src={audioUrl}
-              onEnded={() => setIsPlaying(false)}
-              onLoadedMetadata={(e) => {
-                // For uploaded files, set the duration once loaded
-                if (isFromUpload && e.currentTarget.duration) {
-                  setRecordingTime(Math.floor(e.currentTarget.duration));
-                }
-              }}
-            />
+                  {isFromUpload ? "Use This File" : "Use This Recording"}
+                </>
+              )}
+            </button>
           )}
-        </div>
-
-        {/* Recording quality tips */}
-        {!audioUrl && !isRecording && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="tag text-xs">
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              Quiet environment
-            </span>
-            <span className="tag text-xs">
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              Speak clearly
-            </span>
-            <span className="tag text-xs">
-              <svg
-                className="w-3 h-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-              Natural pace
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Use Recording Button */}
-      {audioUrl && (isFromUpload || recordingTime >= 10) && (
-        <button
-          onClick={handleUseRecording}
-          disabled={isProcessing}
-          className={`
-            w-full btn btn-primary py-3
-            ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}
-          `}
-        >
-          {isProcessing ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Processing...
-            </>
-          ) : (
-            <>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13 7l5 5m0 0l-5 5m5-5H6"
-                />
-              </svg>
-              {isFromUpload ? "Use This File" : "Use This Recording"}
-            </>
-          )}
-        </button>
-      )}
-
-      {/* Warning for short recordings (only for recorded audio, not uploads) */}
-      {audioUrl && !isFromUpload && recordingTime < 10 && (
-        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-          <p className="text-sm text-amber-400">
-            Recording is too short ({formatTime(recordingTime)}). Please record
-            at least 10 seconds for a quality voice clone.
-          </p>
-        </div>
-      )}
-
-      {/* Info for uploaded files */}
-      {audioUrl && isFromUpload && recordingTime > 0 && recordingTime < 10 && (
-        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-          <p className="text-sm text-amber-400">
-            This file is quite short ({formatTime(recordingTime)}). For best voice cloning results, use at least 10 seconds of audio.
-          </p>
         </div>
       )}
     </div>
