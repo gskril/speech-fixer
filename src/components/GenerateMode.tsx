@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { ProcessingStatus } from "./ProcessingStatus";
-import { useGenerateAudio, useDeleteVoice } from "@/hooks/useApi";
+import { useGenerateAudio, useDeleteVoice, useSynthesize } from "@/hooks/useApi";
 
 interface ProcessingStep {
   id: string;
@@ -26,6 +26,7 @@ export function GenerateMode() {
 
   const { generateAudio, cloneVoiceStatus, synthesizeStatus } =
     useGenerateAudio();
+  const synthesizeMutation = useSynthesize();
   const deleteVoiceMutation = useDeleteVoice();
 
   // Keep voiceId ref updated for cleanup
@@ -67,14 +68,27 @@ export function GenerateMode() {
     };
   }, [generatedAudioUrl]);
 
-  const isProcessing = generateAudio.isPending;
+  const isProcessing = generateAudio.isPending || synthesizeMutation.isPending;
 
   const error = useMemo(() => {
     if (generateAudio.error) return generateAudio.error.message;
+    if (synthesizeMutation.error) return synthesizeMutation.error.message;
     return null;
-  }, [generateAudio.error]);
+  }, [generateAudio.error, synthesizeMutation.error]);
 
   const processingSteps = useMemo((): ProcessingStep[] => {
+    // Regenerating with existing voice (synthesize only)
+    if (synthesizeMutation.isPending) {
+      return [
+        {
+          id: "synthesize",
+          label: "Regenerating audio...",
+          status: "in_progress",
+        },
+      ];
+    }
+
+    // Initial generation (clone + synthesize)
     if (!generateAudio.isPending) return [];
 
     return [
@@ -103,7 +117,7 @@ export function GenerateMode() {
                 : "pending",
       },
     ];
-  }, [generateAudio.isPending, cloneVoiceStatus, synthesizeStatus]);
+  }, [generateAudio.isPending, synthesizeMutation.isPending, cloneVoiceStatus, synthesizeStatus]);
 
   const handleRecordingComplete = useCallback((audioBlob: Blob) => {
     const file = new File([audioBlob], "voice-sample.webm", {
@@ -137,6 +151,31 @@ export function GenerateMode() {
       // Error handled by mutation state
     }
   }, [voiceSample, scriptText, generateAudio, generatedAudioUrl]);
+
+  const handleRegenerate = useCallback(async () => {
+    if (!voiceId || !scriptText.trim()) return;
+
+    try {
+      const result = await synthesizeMutation.mutateAsync({
+        text: scriptText.trim(),
+        voiceId,
+      });
+
+      // Create audio URL from base64
+      const response = await fetch(`data:audio/mpeg;base64,${result.audio}`);
+      const blob = await response.blob();
+
+      if (generatedAudioUrl) {
+        URL.revokeObjectURL(generatedAudioUrl);
+      }
+
+      const url = URL.createObjectURL(blob);
+      setGeneratedAudioUrl(url);
+      setIsPlaying(false);
+    } catch {
+      // Error handled by mutation state
+    }
+  }, [voiceId, scriptText, synthesizeMutation, generatedAudioUrl]);
 
   const handlePlayPause = useCallback(() => {
     if (!audioRef.current || !generatedAudioUrl) return;
@@ -174,6 +213,7 @@ export function GenerateMode() {
 
     // Reset mutations
     generateAudio.reset();
+    synthesizeMutation.reset();
 
     // Reset state
     setVoiceSample(null);
@@ -181,7 +221,7 @@ export function GenerateMode() {
     setGeneratedAudioUrl(null);
     setVoiceId(null);
     setIsPlaying(false);
-  }, [voiceId, generatedAudioUrl, deleteVoiceMutation, generateAudio]);
+  }, [voiceId, generatedAudioUrl, deleteVoiceMutation, generateAudio, synthesizeMutation]);
 
   return (
     <div className="relative">
@@ -300,12 +340,55 @@ export function GenerateMode() {
                 {isPlaying ? "Playing..." : "Click to play"}
               </p>
 
-              {/* Script Preview */}
-              <div className="w-full mt-4 p-4 rounded-lg bg-themed-tertiary border border-themed">
-                <p className="text-xs text-themed-muted mb-1">Generated from:</p>
-                <p className="text-sm text-themed-secondary line-clamp-3">
-                  {scriptText}
-                </p>
+              {/* Script Editor for Regeneration */}
+              <div className="w-full mt-4">
+                <label className="text-xs text-themed-muted mb-2 block">
+                  Edit script and regenerate:
+                </label>
+                <textarea
+                  value={scriptText}
+                  onChange={(e) => setScriptText(e.target.value)}
+                  disabled={isProcessing}
+                  className="input w-full h-32 resize-none text-sm"
+                />
+                <div className="flex justify-between items-center mt-2">
+                  <p className="text-xs text-themed-muted">
+                    {scriptText.length} characters
+                  </p>
+                  <button
+                    onClick={handleRegenerate}
+                    disabled={isProcessing || !scriptText.trim()}
+                    className={`btn btn-secondary text-sm ${
+                      isProcessing || !scriptText.trim()
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }`}
+                  >
+                    {synthesizeMutation.isPending ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        Regenerating...
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                          />
+                        </svg>
+                        Regenerate
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Hidden audio element */}
